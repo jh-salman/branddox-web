@@ -1,0 +1,44 @@
+[
+  {
+    "id": "13",
+    "title": "Thumbnails1",
+    "category": "Thumbnails",
+    "imageUrl": "/portfolio/portfolio-1773610846050.png",
+    "aspectClass": "wide"
+  },
+  {
+    "id": "14",
+    "title": "Epic",
+    "category": "Thumbnails",
+    "imageUrl": "/portfolio/portfolio-1773610943622.png",
+    "aspectClass": "wide"
+  },
+  {
+    "id": "15",
+    "title": "Scarry Hallown",
+    "category": "Thumbnails",
+    "imageUrl": "/portfolio/portfolio-1773610980354.png",
+    "aspectClass": "wide"
+  },
+  {
+    "id": "16",
+    "title": "South Eash",
+    "category": "Thumbnails",
+    "imageUrl": "/portfolio/portfolio-1773611012127.png",
+    "aspectClass": "wide"
+  },
+  {
+    "id": "17",
+    "title": "Crypto",
+    "category": "Thumbnails",
+    "imageUrl": "/portfolio/portfolio-1773611029050.png",
+    "aspectClass": "wide"
+  },
+  {
+    "id": "18",
+    "title": "Branddox Logo",
+    "category": "Graphics",
+    "imageUrl": "/portfolio/portfolio-1773611086130.png",
+    "aspectClass": "tall"
+  }
+]
