@@ -1,35 +1,22 @@
 import { ServiceCard } from "./ServiceCard";
 import Link from "next/link";
 
-const services = [
-  {
-    title: "Graphics Design",
-    description: "Logos, social assets, and marketing visuals that look pro.",
-    benefit: "→ Stand out in feeds and inboxes",
-  },
-  {
-    title: "Canva Design",
-    description: "Templates and designs for social, presentations, and more.",
-    benefit: "→ Save time, keep consistency",
-  },
-  {
-    title: "YouTube Services",
-    description: "Channel art, intros, thumbnails, and growth-focused strategy.",
-    benefit: "→ More clicks, more subscribers",
-  },
-  {
-    title: "SEO",
-    description: "Content and visibility so your audience can find you.",
-    benefit: "→ Show up when they search",
-  },
-  {
-    title: "Thumbnail Design",
-    description: "Click-worthy thumbnails that boost CTR and views.",
-    benefit: "→ Higher views, faster growth",
-  },
+const DEFAULT_SERVICES = [
+  { title: "Graphics Design", description: "Logos, social assets, and marketing visuals that look pro.", benefit: "→ Stand out in feeds and inboxes" },
+  { title: "Canva Design", description: "Templates and designs for social, presentations, and more.", benefit: "→ Save time, keep consistency" },
+  { title: "YouTube Services", description: "Channel art, intros, thumbnails, and growth-focused strategy.", benefit: "→ More clicks, more subscribers" },
+  { title: "SEO", description: "Content and visibility so your audience can find you.", benefit: "→ Show up when they search" },
+  { title: "Thumbnail Design", description: "Click-worthy thumbnails that boost CTR and views.", benefit: "→ Higher views, faster growth" },
 ];
 
-export function Services() {
+export type ServiceEntry = {
+  title: string;
+  description: string;
+  benefit: string;
+};
+
+export function Services({ items }: { items?: ServiceEntry[] | null }) {
+  const services = (items && items.length > 0) ? items : DEFAULT_SERVICES;
   return (
     <section id="services" className="bg-[var(--background)] px-4 py-20 sm:px-6 sm:py-28">
       <div className="mx-auto max-w-6xl">

@@ -3,6 +3,7 @@ import { Footer } from "@/components/Footer";
 import { PortfolioGallery } from "@/components/PortfolioGallery";
 import { portfolioItems } from "@/data/portfolio";
 import { getPortfolioItems } from "@/lib/portfolio-store";
+import type { PortfolioItem } from "@/lib/portfolio-types";
 
 export const metadata = {
   title: "Portfolio – Branddox",
@@ -12,9 +13,25 @@ export const metadata = {
 
 export const dynamic = "force-dynamic";
 
+async function fetchPortfolioFromApi(): Promise<PortfolioItem[]> {
+  const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
+  try {
+    const res = await fetch(`${base.replace(/\/$/, "")}/portfolio`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
 export default async function PortfolioPage() {
+  const fromApi = await fetchPortfolioFromApi();
   const stored = await getPortfolioItems();
-  const items = stored.length > 0 ? stored : portfolioItems;
+  const items =
+    fromApi.length > 0 ? fromApi : stored.length > 0 ? stored : portfolioItems;
 
   return (
     <div className="min-h-screen flex flex-col">

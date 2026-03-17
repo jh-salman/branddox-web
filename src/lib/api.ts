@@ -38,6 +38,40 @@ export type CreateLeadBody = {
   message?: string | null;
 };
 
+export type PortfolioItem = {
+  id: string;
+  title: string;
+  category: string;
+  imageUrl: string;
+  aspectClass: "tall" | "square" | "wide" | "xtall";
+  width?: number;
+  height?: number;
+};
+
+export type CreatePortfolioBody = {
+  title: string;
+  category: string;
+  imageUrl: string;
+  aspectClass?: "tall" | "square" | "wide" | "xtall";
+  width?: number;
+  height?: number;
+};
+
+export type ServiceItem = {
+  id: string;
+  title: string;
+  description: string;
+  benefit: string;
+  sortOrder?: number;
+};
+
+export type CreateServiceBody = {
+  title: string;
+  description: string;
+  benefit: string;
+  sortOrder?: number;
+};
+
 async function request<T>(
   path: string,
   options?: RequestInit & { params?: Record<string, string> }
@@ -110,5 +144,71 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     });
+  },
+
+  /** GET /portfolio – list all (from database) */
+  getPortfolio() {
+    return request<PortfolioItem[]>("/portfolio");
+  },
+
+  /** GET /portfolio/:id */
+  getPortfolioItem(id: string) {
+    return request<PortfolioItem>(`/portfolio/${id}`);
+  },
+
+  /** POST /portfolio – create (imageUrl = Cloudinary URL from upload) */
+  createPortfolioItem(body: CreatePortfolioBody) {
+    return request<PortfolioItem>("/portfolio", { method: "POST", body: JSON.stringify(body) });
+  },
+
+  /** PATCH /portfolio/:id */
+  updatePortfolioItem(id: string, body: Partial<PortfolioItem>) {
+    return request<PortfolioItem>(`/portfolio/${id}`, { method: "PATCH", body: JSON.stringify(body) });
+  },
+
+  /** DELETE /portfolio/:id */
+  deletePortfolioItem(id: string) {
+    return request<void>(`/portfolio/${id}`, { method: "DELETE" });
+  },
+
+  /** GET /services */
+  getServices() {
+    return request<ServiceItem[]>("/services");
+  },
+
+  /** GET /services/:id */
+  getService(id: string) {
+    return request<ServiceItem>(`/services/${id}`);
+  },
+
+  /** POST /services */
+  createService(body: CreateServiceBody) {
+    return request<ServiceItem>("/services", { method: "POST", body: JSON.stringify(body) });
+  },
+
+  /** PATCH /services/:id */
+  updateService(id: string, body: Partial<CreateServiceBody>) {
+    return request<ServiceItem>(`/services/${id}`, { method: "PATCH", body: JSON.stringify(body) });
+  },
+
+  /** DELETE /services/:id */
+  deleteService(id: string) {
+    return request<void>(`/services/${id}`, { method: "DELETE" });
+  },
+
+  /** POST /upload – upload portfolio image; returns { url } (Cloudinary URL). */
+  async uploadPortfolioImage(file: File): Promise<{ url: string }> {
+    const formData = new FormData();
+    formData.set("image", file);
+    const res = await fetch(`${API_BASE}/upload`, {
+      method: "POST",
+      body: formData,
+      // Do not set Content-Type; browser sets multipart boundary
+    });
+    if (!res.ok) {
+      const err = (await res.json().catch(() => ({}))) as { error?: string };
+      throw new Error(err.error || res.statusText || "Upload failed");
+    }
+    return res.json() as Promise<{ url: string }>;
   },
 };

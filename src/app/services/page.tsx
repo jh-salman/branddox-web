@@ -2,30 +2,28 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ServiceCard } from "@/components/ServiceCard";
 
-const SERVICES = [
-  {
-    title: "YouTube Video Editing",
-    description: "End-to-end editing for long-form videos with pacing, cuts, b-roll, and hooks.",
-    benefit: "→ Keep viewers watching longer",
-  },
-  {
-    title: "Thumbnail Design",
-    description: "High-CTR thumbnail systems that match your niche and audience psychology.",
-    benefit: "→ More clicks from the same impressions",
-  },
-  {
-    title: "Shorts Repurposing",
-    description: "Turn long-form content into shorts optimized for YouTube, Reels, and TikTok.",
-    benefit: "→ Post more without burning out",
-  },
-  {
-    title: "Channel Branding",
-    description: "Logo, banner, overlays, and full visual identity for your channel.",
-    benefit: "→ Look like a top-tier creator",
-  },
+const FALLBACK_SERVICES = [
+  { title: "YouTube Video Editing", description: "End-to-end editing for long-form videos with pacing, cuts, b-roll, and hooks.", benefit: "→ Keep viewers watching longer" },
+  { title: "Thumbnail Design", description: "High-CTR thumbnail systems that match your niche and audience psychology.", benefit: "→ More clicks from the same impressions" },
+  { title: "Shorts Repurposing", description: "Turn long-form content into shorts optimized for YouTube, Reels, and TikTok.", benefit: "→ Post more without burning out" },
+  { title: "Channel Branding", description: "Logo, banner, overlays, and full visual identity for your channel.", benefit: "→ Look like a top-tier creator" },
 ];
 
-export default function ServicesPage() {
+async function fetchServices() {
+  const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
+  try {
+    const res = await fetch(`${base.replace(/\/$/, "")}/services`, { next: { revalidate: 60 } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+export default async function ServicesPage() {
+  const fromApi = await fetchServices();
+  const services = fromApi.length > 0 ? fromApi : FALLBACK_SERVICES;
   return (
     <div className="min-h-screen flex flex-col bg-[var(--background)]">
       <Header />
@@ -45,9 +43,9 @@ export default function ServicesPage() {
 
         <section className="mx-auto max-w-5xl px-4 sm:px-6">
           <div className="grid gap-6 sm:grid-cols-2">
-            {SERVICES.map((s) => (
+            {services.map((s, i) => (
               <ServiceCard
-                key={s.title}
+                key={(s as { id?: string }).id ?? `service-${i}`}
                 title={s.title}
                 description={s.description}
                 benefit={s.benefit}

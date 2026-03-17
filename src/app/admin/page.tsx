@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import type { PortfolioItem } from "@/lib/portfolio-types";
 import { PORTFOLIO_CATEGORIES } from "@/lib/portfolio-types";
+import { api, API_BASE } from "@/lib/api";
+import type { ServiceItem } from "@/lib/api";
 
 const CATEGORIES = PORTFOLIO_CATEGORIES;
 const ASPECT_OPTIONS: { value: PortfolioItem["aspectClass"]; label: string }[] = [
@@ -34,6 +36,12 @@ export default function AdminPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<PortfolioItem> & { width?: number | ""; height?: number | "" }>({});
 
+  const [adminTab, setAdminTab] = useState<"portfolio" | "services">("portfolio");
+  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [serviceForm, setServiceForm] = useState({ title: "", description: "", benefit: "" });
+  const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
+  const [editServiceForm, setEditServiceForm] = useState<Partial<ServiceItem>>({});
+
   const checkAuth = useCallback(async () => {
     const res = await fetch("/api/admin/me");
     const data = await res.json();
@@ -41,13 +49,21 @@ export default function AdminPage() {
   }, []);
 
   const fetchItems = useCallback(async () => {
-    const res = await fetch("/api/portfolio");
-    if (!res.ok) {
+    try {
+      const data = await api.getPortfolio();
+      setItems(Array.isArray(data) ? data : []);
+    } catch {
       setError("Failed to load portfolio");
-      return;
     }
-    const data = await res.json();
-    setItems(Array.isArray(data) ? data : []);
+  }, []);
+
+  const fetchServices = useCallback(async () => {
+    try {
+      const data = await api.getServices();
+      setServices(Array.isArray(data) ? data : []);
+    } catch {
+      setError("Failed to load services");
+    }
   }, []);
 
   useEffect(() => {
@@ -57,6 +73,10 @@ export default function AdminPage() {
   useEffect(() => {
     if (loggedIn) fetchItems();
   }, [loggedIn, fetchItems]);
+
+  useEffect(() => {
+    if (loggedIn && adminTab === "services") fetchServices();
+  }, [loggedIn, adminTab, fetchServices]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,39 +106,25 @@ export default function AdminPage() {
     setError("");
     try {
       if (uploadFile) {
-        const fd = new FormData();
-        fd.set("title", form.title);
-        fd.set("category", form.category);
-        fd.set("aspectClass", form.aspectClass);
-        fd.set("image", uploadFile);
-        if (form.width !== "" && form.width !== undefined) fd.set("width", String(form.width));
-        if (form.height !== "" && form.height !== undefined) fd.set("height", String(form.height));
-        const res = await fetch("/api/portfolio", {
-          method: "POST",
-          body: fd,
+        const { url } = await api.uploadPortfolioImage(uploadFile);
+        const imageUrl = url.startsWith("http") ? url : `${API_BASE.replace(/\/$/, "")}${url}`;
+        await api.createPortfolioItem({
+          title: form.title,
+          category: form.category,
+          imageUrl,
+          aspectClass: form.aspectClass,
+          width: form.width !== "" && form.width !== undefined ? Number(form.width) : undefined,
+          height: form.height !== "" && form.height !== undefined ? Number(form.height) : undefined,
         });
-        if (!res.ok) {
-          const d = await res.json();
-          throw new Error(d.error || "Upload failed");
-        }
       } else if (form.imageUrl.trim()) {
-        const payload: Record<string, unknown> = {
+        await api.createPortfolioItem({
           title: form.title,
           category: form.category,
           imageUrl: form.imageUrl.trim(),
           aspectClass: form.aspectClass,
-        };
-        if (form.width !== "" && form.width !== undefined) payload.width = Number(form.width);
-        if (form.height !== "" && form.height !== undefined) payload.height = Number(form.height);
-        const res = await fetch("/api/portfolio", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          width: form.width !== "" && form.width !== undefined ? Number(form.width) : undefined,
+          height: form.height !== "" && form.height !== undefined ? Number(form.height) : undefined,
         });
-        if (!res.ok) {
-          const d = await res.json();
-          throw new Error(d.error || "Add failed");
-        }
       } else {
         throw new Error("Upload an image or paste an image URL");
       }
@@ -147,12 +153,7 @@ export default function AdminPage() {
     if (h === "" || h === undefined) delete payload.height;
     else payload.height = Number(h);
     try {
-      const res = await fetch(`/api/portfolio/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error("Update failed");
+      await api.updatePortfolioItem(id, payload);
       setEditingId(null);
       setEditForm({});
       await fetchItems();
@@ -168,9 +169,64 @@ export default function AdminPage() {
     setSubmitting(true);
     setError("");
     try {
-      const res = await fetch(`/api/portfolio/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Delete failed");
+      await api.deletePortfolioItem(id);
       await fetchItems();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Delete failed");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleAddService = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError("");
+    try {
+      await api.createService({
+        title: serviceForm.title.trim(),
+        description: serviceForm.description.trim(),
+        benefit: serviceForm.benefit.trim(),
+      });
+      setServiceForm({ title: "", description: "", benefit: "" });
+      await fetchServices();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add service");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleUpdateService = async (id: string) => {
+    if (!editServiceForm.title && !editServiceForm.description && !editServiceForm.benefit) {
+      setEditingServiceId(null);
+      return;
+    }
+    setSubmitting(true);
+    setError("");
+    try {
+      await api.updateService(id, {
+        title: editServiceForm.title?.trim(),
+        description: editServiceForm.description?.trim(),
+        benefit: editServiceForm.benefit?.trim(),
+      });
+      setEditingServiceId(null);
+      setEditServiceForm({});
+      await fetchServices();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Update failed");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteService = async (id: string) => {
+    if (!confirm("Delete this service?")) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      await api.deleteService(id);
+      await fetchServices();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Delete failed");
     } finally {
@@ -255,9 +311,35 @@ export default function AdminPage() {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-8">
-        <h1 className="mb-6 text-2xl font-bold text-[var(--brand-dark)]">
-          Portfolio admin
-        </h1>
+        <div className="mb-6 flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-[var(--brand-dark)]">
+            Admin
+          </h1>
+          <nav className="flex gap-1 rounded-lg border border-[var(--brand-dark)]/10 p-1">
+            <button
+              type="button"
+              onClick={() => setAdminTab("portfolio")}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium ${
+                adminTab === "portfolio"
+                  ? "bg-[var(--brand-dark)] text-white"
+                  : "text-[var(--brand-dark)]/70 hover:bg-[var(--brand-dark)]/5"
+              }`}
+            >
+              Portfolio
+            </button>
+            <button
+              type="button"
+              onClick={() => setAdminTab("services")}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium ${
+                adminTab === "services"
+                  ? "bg-[var(--brand-dark)] text-white"
+                  : "text-[var(--brand-dark)]/70 hover:bg-[var(--brand-dark)]/5"
+              }`}
+            >
+              Services
+            </button>
+          </nav>
+        </div>
 
         {error && (
           <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
@@ -265,6 +347,8 @@ export default function AdminPage() {
           </div>
         )}
 
+        {adminTab === "portfolio" && (
+          <>
         {/* Add form */}
         <section className="mb-10 rounded-xl border border-[var(--brand-dark)]/10 bg-white p-6">
           <h2 className="mb-4 text-lg font-semibold text-[var(--brand-dark)]">
@@ -555,6 +639,139 @@ export default function AdminPage() {
             </p>
           )}
         </section>
+          </>
+        )}
+
+        {adminTab === "services" && (
+          <>
+        <section className="mb-10 rounded-xl border border-[var(--brand-dark)]/10 bg-white p-6">
+          <h2 className="mb-4 text-lg font-semibold text-[var(--brand-dark)]">
+            Add service
+          </h2>
+          <form onSubmit={handleAddService} className="space-y-4">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[var(--brand-dark)]">Title</label>
+              <input
+                type="text"
+                value={serviceForm.title}
+                onChange={(e) => setServiceForm((f) => ({ ...f, title: e.target.value }))}
+                placeholder="e.g. Graphics Design"
+                className="w-full rounded-lg border border-[var(--brand-dark)]/20 px-3 py-2"
+                required
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[var(--brand-dark)]">Description</label>
+              <textarea
+                value={serviceForm.description}
+                onChange={(e) => setServiceForm((f) => ({ ...f, description: e.target.value }))}
+                placeholder="Short description of the service"
+                rows={2}
+                className="w-full rounded-lg border border-[var(--brand-dark)]/20 px-3 py-2"
+                required
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[var(--brand-dark)]">Benefit (e.g. → Stand out in feeds)</label>
+              <input
+                type="text"
+                value={serviceForm.benefit}
+                onChange={(e) => setServiceForm((f) => ({ ...f, benefit: e.target.value }))}
+                placeholder="→ Benefit line"
+                className="w-full rounded-lg border border-[var(--brand-dark)]/20 px-3 py-2"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="rounded-lg bg-[var(--brand-mint)] px-4 py-2 font-semibold text-[var(--brand-dark)] hover:bg-[var(--brand-green)] disabled:opacity-50"
+            >
+              {submitting ? "Adding…" : "Add service"}
+            </button>
+          </form>
+        </section>
+        <section>
+          <h2 className="mb-4 text-lg font-semibold text-[var(--brand-dark)]">Services ({services.length})</h2>
+          <ul className="space-y-4">
+            {services.map((s) => (
+              <li key={s.id} className="rounded-xl border border-[var(--brand-dark)]/10 bg-white p-4">
+                {editingServiceId === s.id ? (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={editServiceForm.title ?? s.title}
+                      onChange={(e) => setEditServiceForm((f) => ({ ...f, title: e.target.value }))}
+                      className="w-full rounded border px-2 py-1 text-sm"
+                      placeholder="Title"
+                    />
+                    <textarea
+                      value={editServiceForm.description ?? s.description}
+                      onChange={(e) => setEditServiceForm((f) => ({ ...f, description: e.target.value }))}
+                      rows={2}
+                      className="w-full rounded border px-2 py-1 text-sm"
+                      placeholder="Description"
+                    />
+                    <input
+                      type="text"
+                      value={editServiceForm.benefit ?? s.benefit}
+                      onChange={(e) => setEditServiceForm((f) => ({ ...f, benefit: e.target.value }))}
+                      className="w-full rounded border px-2 py-1 text-sm"
+                      placeholder="Benefit"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateService(s.id)}
+                        disabled={submitting}
+                        className="rounded bg-[var(--brand-mint)] px-2 py-1 text-sm font-medium text-[var(--brand-dark)]"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setEditingServiceId(null); setEditServiceForm({}); }}
+                        className="rounded bg-[var(--brand-dark)]/10 px-2 py-1 text-sm"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="font-bold text-[var(--brand-dark)]">{s.title}</p>
+                    <p className="text-sm text-[var(--brand-dark)]/70">{s.description}</p>
+                    <p className="mt-1 text-sm font-semibold text-[var(--brand-mint)]">{s.benefit}</p>
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => { setEditingServiceId(s.id); setEditServiceForm({ ...s }); }}
+                        className="text-sm text-[var(--brand-mint)] hover:underline"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteService(s.id)}
+                        disabled={submitting}
+                        className="text-sm text-red-600 hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+          {services.length === 0 && (
+            <p className="rounded-xl border border-dashed border-[var(--brand-dark)]/20 bg-[var(--brand-dark)]/5 py-8 text-center text-[var(--brand-dark)]/70">
+              No services yet. Add one above.
+            </p>
+          )}
+        </section>
+          </>
+        )}
       </main>
     </div>
   );
