@@ -79,19 +79,23 @@ export default function AdminPage() {
 
   const fetchItems = useCallback(async () => {
     try {
+      setError("");
       const data = await api.getPortfolio();
       setItems(Array.isArray(data) ? data : []);
-    } catch {
-      setError("Failed to load portfolio");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to load portfolio";
+      setError(msg);
     }
   }, []);
 
   const fetchServices = useCallback(async () => {
     try {
+      setError("");
       const data = await api.getServices();
       setServices(Array.isArray(data) ? data : []);
-    } catch {
-      setError("Failed to load services");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to load services";
+      setError(msg);
     }
   }, []);
 
@@ -109,10 +113,12 @@ export default function AdminPage() {
 
   const fetchClients = useCallback(async () => {
     try {
+      setError("");
       const data = await api.getClients();
       setClients(Array.isArray(data) ? data : []);
-    } catch {
-      setError("Failed to load clients");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to load clients";
+      setError(msg);
     }
   }, []);
 

@@ -1,15 +1,13 @@
 /**
  * Branddox backend API client.
- * Set NEXT_PUBLIC_API_BASE_URL in .env.local (e.g. http://localhost:4000 or https://branddox-api.vercel.app).
- * No trailing slash. On production (vercel.app), uses branddox-api.vercel.app if env is localhost or unset.
+ * Server-side and non-admin: uses NEXT_PUBLIC_API_BASE_URL or backend URL.
+ * Browser (admin): uses same-origin proxy /api/admin/backend so CORS is not needed.
  */
 function getApiBase(): string {
-  let raw = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
   if (typeof window !== "undefined") {
-    const isProd = window.location.hostname.includes("vercel.app");
-    const isLocalhostApi = !raw || raw.startsWith("http://localhost") || raw.startsWith("http://127.0.0.1");
-    if (isProd && isLocalhostApi) raw = "https://branddox-api.vercel.app";
+    return `${window.location.origin}/api/admin/backend`;
   }
+  const raw = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
   return raw.replace(/\/$/, "");
 }
 
