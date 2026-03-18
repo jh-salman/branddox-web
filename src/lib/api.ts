@@ -103,7 +103,9 @@ async function request<T>(
   options?: RequestInit & { params?: Record<string, string> }
 ): Promise<T> {
   const { params, ...init } = options ?? {};
-  const url = new URL(path, API_BASE);
+  const base = API_BASE.replace(/\/$/, "");
+  const pathStr = path.startsWith("/") ? path : `/${path}`;
+  const url = new URL(`${base}${pathStr}`);
   if (params) {
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
   }
@@ -112,18 +114,27 @@ async function request<T>(
     headers: { "Content-Type": "application/json", ...init.headers },
   });
   if (!res.ok) {
-    const err = (await res.json().catch(() => ({}))) as {
-      error?: string;
-      message?: string;
-      details?: Record<string, string[]>;
-    };
+    const ct = res.headers.get("content-type") || "";
+    const isJson = ct.includes("application/json");
+    const err = isJson
+      ? ((await res.json().catch(() => ({}))) as { error?: string; message?: string; details?: Record<string, string[]> })
+      : {};
     const msg = err.message || err.error || res.statusText || "Request failed";
     const detail = err.details
       ? " " + Object.entries(err.details).map(([k, v]) => `${k}: ${(v ?? []).join(", ")}`).join("; ")
       : "";
+    if (!isJson) {
+      const text = await res.text().catch(() => "");
+      if (text.startsWith("<")) throw new Error(`${msg} (server returned HTML, not JSON)`);
+    }
     throw new Error(msg + (detail ? detail : ""));
   }
   if (res.status === 204) return undefined as T;
+  const contentType = res.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Expected JSON but got ${contentType || "unknown"}${text.startsWith("<") ? " (HTML)" : ""}`);
+  }
   return res.json() as Promise<T>;
 }
 
