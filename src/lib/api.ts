@@ -1,13 +1,15 @@
 /**
  * Branddox backend API client.
  * Set NEXT_PUBLIC_API_BASE_URL in .env.local (e.g. http://localhost:4000 or https://branddox-api.vercel.app).
- * No trailing slash – we normalize it.
+ * No trailing slash. On production (vercel.app), uses branddox-api.vercel.app if env is localhost or unset.
  */
 function getApiBase(): string {
-  const raw =
-    typeof window !== "undefined"
-      ? (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000")
-      : process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
+  let raw = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
+  if (typeof window !== "undefined") {
+    const isProd = window.location.hostname.includes("vercel.app");
+    const isLocalhostApi = !raw || raw.startsWith("http://localhost") || raw.startsWith("http://127.0.0.1");
+    if (isProd && isLocalhostApi) raw = "https://branddox-api.vercel.app";
+  }
   return raw.replace(/\/$/, "");
 }
 
@@ -112,8 +114,16 @@ async function request<T>(
     headers: { "Content-Type": "application/json", ...init.headers },
   });
   if (!res.ok) {
-    const err = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(err.error || res.statusText || "Request failed");
+    const err = (await res.json().catch(() => ({}))) as {
+      error?: string;
+      message?: string;
+      details?: Record<string, string[]>;
+    };
+    const msg = err.message || err.error || res.statusText || "Request failed";
+    const detail = err.details
+      ? " " + Object.entries(err.details).map(([k, v]) => `${k}: ${(v ?? []).join(", ")}`).join("; ")
+      : "";
+    throw new Error(msg + (detail ? detail : ""));
   }
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
