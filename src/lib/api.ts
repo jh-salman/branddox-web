@@ -1,11 +1,17 @@
 /**
  * Branddox backend API client.
- * Set NEXT_PUBLIC_API_BASE_URL in .env.local (e.g. http://localhost:4000).
+ * Set NEXT_PUBLIC_API_BASE_URL in .env.local (e.g. http://localhost:4000 or https://branddox-api.vercel.app).
+ * No trailing slash – we normalize it.
  */
-const API_BASE =
-  typeof window !== "undefined"
-    ? (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000")
-    : process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
+function getApiBase(): string {
+  const raw =
+    typeof window !== "undefined"
+      ? (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000")
+      : process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
+  return raw.replace(/\/$/, "");
+}
+
+const API_BASE = getApiBase();
 
 export { API_BASE };
 
@@ -40,7 +46,7 @@ export type CreateLeadBody = {
 
 export type PortfolioItem = {
   id: string;
-  title: string;
+  title?: string | null;
   category: string;
   imageUrl: string;
   aspectClass: "tall" | "square" | "wide" | "xtall";
@@ -48,8 +54,9 @@ export type PortfolioItem = {
   height?: number;
 };
 
+/** Matches backend POST /portfolio (Zod createSchema): required category, imageUrl; optional title, aspectClass, width, height */
 export type CreatePortfolioBody = {
-  title: string;
+  title?: string;
   category: string;
   imageUrl: string;
   aspectClass?: "tall" | "square" | "wide" | "xtall";
@@ -69,6 +76,25 @@ export type CreateServiceBody = {
   title: string;
   description: string;
   benefit: string;
+  sortOrder?: number;
+};
+
+export type ClientItem = {
+  id: string;
+  channelName: string;
+  channelUrl: string;
+  imageUrl: string;
+  subscriberCount?: string;
+  description?: string;
+  sortOrder?: number;
+};
+
+export type CreateClientBody = {
+  channelName: string;
+  channelUrl: string;
+  imageUrl: string;
+  subscriberCount?: string;
+  description?: string;
   sortOrder?: number;
 };
 
@@ -194,6 +220,31 @@ export const api = {
   /** DELETE /services/:id */
   deleteService(id: string) {
     return request<void>(`/services/${id}`, { method: "DELETE" });
+  },
+
+  /** GET /clients */
+  getClients() {
+    return request<ClientItem[]>("/clients");
+  },
+
+  /** GET /clients/:id */
+  getClient(id: string) {
+    return request<ClientItem>(`/clients/${id}`);
+  },
+
+  /** POST /clients */
+  createClient(body: CreateClientBody) {
+    return request<ClientItem>("/clients", { method: "POST", body: JSON.stringify(body) });
+  },
+
+  /** PATCH /clients/:id */
+  updateClient(id: string, body: Partial<CreateClientBody>) {
+    return request<ClientItem>(`/clients/${id}`, { method: "PATCH", body: JSON.stringify(body) });
+  },
+
+  /** DELETE /clients/:id */
+  deleteClient(id: string) {
+    return request<void>(`/clients/${id}`, { method: "DELETE" });
   },
 
   /** POST /upload – upload portfolio image; returns { url } (Cloudinary URL). */

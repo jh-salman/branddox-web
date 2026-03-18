@@ -16,28 +16,22 @@ export function Header() {
           </span>
         </Link>
         <nav className="flex items-center gap-6 text-sm font-medium">
-          <Link
-            href="#services"
-            className="text-white/90 transition hover:text-[var(--brand-mint)]"
-          >
+          <Link href="/services" className="text-white/90 transition hover:text-[var(--brand-mint)]">
             Services
           </Link>
-          <Link
-            href="#about"
-            className="text-white/90 transition hover:text-[var(--brand-mint)]"
-          >
+          <Link href="/about" className="text-white/90 transition hover:text-[var(--brand-mint)]">
             About
           </Link>
           <Link href="/portfolio" className="text-white/90 transition hover:text-[var(--brand-mint)]">
             Portfolio
           </Link>
-          <Link href="#contact" className="text-white/90 transition hover:text-[var(--brand-mint)]">
+          <Link href="/our-clients" className="text-white/90 transition hover:text-[var(--brand-mint)]">
+            Our Clients
+          </Link>
+          <Link href="/contact" className="text-white/90 transition hover:text-[var(--brand-mint)]">
             Contact
           </Link>
-          <Link
-            href="#reviews"
-            className="text-white/90 transition hover:text-[var(--brand-mint)]"
-          >
+          <Link href="/reviews" className="text-white/90 transition hover:text-[var(--brand-mint)]">
             Reviews
           </Link>
           <a

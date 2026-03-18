@@ -3,20 +3,20 @@ import Link from "next/link";
 
 export function CTA() {
   return (
-    <section className="relative overflow-hidden bg-[var(--brand-dark)] px-4 py-20 sm:px-6 sm:py-28">
+    <section className="relative overflow-hidden bg-[var(--brand-dark)] px-4 py-24 sm:px-6 sm:py-32">
       <div
-        className="pointer-events-none absolute inset-0 opacity-20"
+        className="pointer-events-none absolute inset-0 opacity-30"
         style={{
-          background: "radial-gradient(ellipse 70% 60% at 50% 100%, var(--brand-mint), transparent 70%)",
+          background: "radial-gradient(ellipse 80% 70% at 50% 50%, var(--brand-mint), transparent 60%)",
         }}
       />
       <div className="relative mx-auto max-w-3xl text-center">
         <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--brand-mint)]">
           Ready to stand out?
         </p>
-        <h2 className="mb-4 text-3xl font-bold text-white sm:text-4xl md:text-5xl">
-          BRANDDOX BUILDS YOUR
-          <span className="block text-[var(--brand-mint)]">DIGITAL IDENTITY.</span>
+        <h2 className="mb-4 text-3xl font-bold leading-tight text-white sm:text-4xl md:text-5xl">
+          Let&apos;s make your brand
+          <span className="block text-[var(--brand-mint)]">look like it belongs at the top.</span>
         </h2>
         <p className="mb-10 text-xl text-white/90">
           Be seen. Be trusted. Tell me what you need and I&apos;ll reply personally.
@@ -32,7 +32,7 @@ export function CTA() {
             }
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-full bg-[var(--brand-mint)] px-8 py-3 text-base font-bold text-[var(--brand-dark)] shadow-lg shadow-[var(--brand-mint)]/25 transition hover:scale-[1.02] hover:bg-[var(--brand-green)] hover:shadow-[var(--brand-mint)]/40"
+            className="inline-flex items-center gap-2 rounded-full border-2 border-[var(--brand-mint)]/40 bg-[var(--brand-mint)] px-8 py-4 text-base font-bold text-[var(--brand-dark)] shadow-lg shadow-[var(--brand-mint)]/30 transition hover:scale-[1.02] hover:bg-[var(--brand-green)] hover:shadow-[var(--brand-mint)]/50"
           >
             Message on WhatsApp
             <span aria-hidden>→</span>

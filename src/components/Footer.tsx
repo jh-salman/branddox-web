@@ -13,17 +13,23 @@ export function Footer() {
           </span>
         </Link>
         <nav className="flex flex-wrap items-center justify-center gap-6 text-sm text-white/80">
-          <Link href="#services" className="hover:text-[var(--brand-mint)]">
+          <Link href="/services" className="hover:text-[var(--brand-mint)]">
             Services
           </Link>
-          <Link href="#about" className="hover:text-[var(--brand-mint)]">
+          <Link href="/about" className="hover:text-[var(--brand-mint)]">
             About
           </Link>
           <Link href="/portfolio" className="hover:text-[var(--brand-mint)]">
             Portfolio
           </Link>
-          <Link href="#contact" className="hover:text-[var(--brand-mint)]">
+          <Link href="/our-clients" className="hover:text-[var(--brand-mint)]">
+            Our Clients
+          </Link>
+          <Link href="/contact" className="hover:text-[var(--brand-mint)]">
             Contact
+          </Link>
+          <Link href="/reviews" className="hover:text-[var(--brand-mint)]">
+            Reviews
           </Link>
           <Link
             href="/admin"

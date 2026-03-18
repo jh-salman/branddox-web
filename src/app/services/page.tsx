@@ -2,6 +2,12 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ServiceCard } from "@/components/ServiceCard";
 
+export const metadata = {
+  title: "Services – Branddox",
+  description:
+    "One partner for your YouTube growth. Thumbnails, channel branding, video editing, shorts repurposing, and more.",
+};
+
 const FALLBACK_SERVICES = [
   { title: "YouTube Video Editing", description: "End-to-end editing for long-form videos with pacing, cuts, b-roll, and hooks.", benefit: "→ Keep viewers watching longer" },
   { title: "Thumbnail Design", description: "High-CTR thumbnail systems that match your niche and audience psychology.", benefit: "→ More clicks from the same impressions" },

@@ -9,6 +9,7 @@ export type Review = {
   rating: number;
   text: string;
   context: string; // e.g. "YouTube Channel Create · Mar 2025"
+  subscriberCount?: string; // e.g. "850K subscribers" — optional for display
 };
 
 export const reviews: Review[] = [
@@ -39,6 +40,7 @@ export const reviews: Review[] = [
     rating: 5,
     text: "Have ordered multiple times. Always delivers fast, communicates clearly, and the channel designs are top notch. Highly recommend.",
     context: "Custom YouTube Package · Jul 2024",
+    subscriberCount: "420K subscribers",
   },
   {
     id: "5",
@@ -46,6 +48,7 @@ export const reviews: Review[] = [
     rating: 5,
     text: "Professional from start to finish. Custom package was worth it—got logo, art, SEO and full setup. Very satisfied.",
     context: "Custom Order · Jun 2024",
+    subscriberCount: "850K subscribers",
   },
   {
     id: "6",

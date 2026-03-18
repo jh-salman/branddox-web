@@ -4,7 +4,7 @@ export type PortfolioCategory = (typeof PORTFOLIO_CATEGORIES)[number];
 
 export type PortfolioItem = {
   id: string;
-  title: string;
+  title?: string | null;
   category: string;
   imageUrl: string;
   aspectClass: "tall" | "square" | "wide" | "xtall";

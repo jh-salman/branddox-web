@@ -1,3 +1,5 @@
+"use client";
+
 const icons: Record<string, string> = {
   Graphics:
     "M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5",
@@ -15,22 +17,52 @@ export function ServiceCard({
   title,
   description,
   benefit,
+  variant = "light",
 }: {
   title: string;
   description: string;
   benefit: string;
+  variant?: "dark" | "light";
 }) {
   const path = icons[title.split(" ")[0]] || icons.Graphics;
+  const isDark = variant === "dark";
+
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-[var(--brand-dark)]/10 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-[var(--brand-mint)]/50 hover:shadow-lg hover:shadow-[var(--brand-mint)]/10">
-      <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--brand-dark)] text-[var(--brand-mint)] transition group-hover:bg-[var(--brand-mint)] group-hover:text-[var(--brand-dark)]">
+    <div
+      className={
+        isDark
+          ? "group relative flex gap-5 rounded-2xl border border-white/10 bg-white/[0.06] py-6 pl-6 pr-6 transition duration-300 hover:scale-[1.02] hover:border-[var(--brand-mint)]/30 hover:bg-white/[0.1] hover:shadow-lg hover:shadow-[var(--brand-mint)]/10"
+          : "group relative flex gap-5 rounded-2xl border border-[var(--brand-dark)]/[0.08] bg-white/[0.6] py-6 pl-6 pr-6 transition duration-300 hover:scale-[1.02] hover:border-[var(--brand-mint)]/20 hover:bg-white hover:shadow-lg hover:shadow-[var(--brand-mint)]/[0.06]"
+      }
+    >
+      {/* Left glow line on hover */}
+      <div className="absolute left-0 top-0 h-full w-0 rounded-l-full bg-[var(--brand-mint)] transition-all duration-300 group-hover:w-0.5" />
+
+      <div
+        className={
+          isDark
+            ? "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white transition duration-300 group-hover:translate-x-0.5 group-hover:bg-[var(--brand-mint)]/25 group-hover:text-[var(--brand-mint)]"
+            : "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-dark)]/5 text-[var(--brand-dark)] transition duration-300 group-hover:translate-x-0.5 group-hover:bg-[var(--brand-mint)]/20 group-hover:text-[var(--brand-mint)]"
+        }
+      >
         <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d={path} />
         </svg>
       </div>
-      <h3 className="mb-2 text-xl font-bold text-[var(--brand-dark)]">{title}</h3>
-      <p className="mb-3 text-[var(--brand-dark)]/70">{description}</p>
-      <p className="text-sm font-semibold text-[var(--brand-mint)]">{benefit}</p>
+
+      <div className="min-w-0 flex-1">
+        <h3
+          className={
+            isDark
+              ? "mb-2 text-xl font-bold text-white transition duration-300 group-hover:text-white"
+              : "mb-2 text-xl font-bold text-[var(--brand-dark)] transition duration-300 group-hover:text-[var(--brand-dark)]"
+          }
+        >
+          {title}
+        </h3>
+        <p className={isDark ? "mb-3 text-white/70" : "mb-3 text-[var(--brand-dark)]/70"}>{description}</p>
+        <p className="text-sm font-semibold text-[var(--brand-mint)]">{benefit}</p>
+      </div>
     </div>
   );
 }

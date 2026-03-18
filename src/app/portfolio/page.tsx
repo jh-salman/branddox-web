@@ -34,21 +34,30 @@ export default async function PortfolioPage() {
     fromApi.length > 0 ? fromApi : stored.length > 0 ? stored : portfolioItems;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-[var(--background)]">
       <Header />
-      <main className="flex-1 bg-[var(--background)] py-12 sm:py-16">
-        <div className="mx-auto max-w-7xl px-4 text-center sm:px-6">
-          <h1 className="mb-3 text-4xl font-bold text-[var(--brand-dark)] sm:text-5xl">
-            Portfolio
-          </h1>
-          <p className="mx-auto max-w-2xl text-lg text-[var(--brand-dark)]/80">
-            A selection of branding, graphics, thumbnails, and design work for YouTube, social
-            media, and professional brands.
-          </p>
-        </div>
-        <div className="mt-10">
+      <main className="flex-1">
+        {/* Hero */}
+        <section className="relative overflow-hidden bg-[var(--brand-dark)] px-4 py-20 sm:px-6 sm:py-28">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,var(--brand-mint)/15%,transparent)]" />
+          <div className="relative mx-auto max-w-4xl text-center">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--brand-mint)]">
+              Our work
+            </p>
+            <h1 className="mb-4 text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl">
+              Portfolio
+            </h1>
+            <p className="mx-auto max-w-2xl text-lg text-white/80">
+              Thumbnails, channel art, logos, and branding for YouTube and beyond.
+              All uploads use our API and Cloudinary.
+            </p>
+          </div>
+        </section>
+
+        {/* Gallery */}
+        <section className="py-14 sm:py-20">
           <PortfolioGallery items={items} />
-        </div>
+        </section>
       </main>
       <Footer />
     </div>
