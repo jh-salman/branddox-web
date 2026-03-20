@@ -1,0 +1,22 @@
+{
+  "name": "Branddox",
+  "short_name": "Branddox",
+  "description": "Branding design studio. Be seen. Be trusted.",
+  "icons": [
+    {
+      "src": "/brand/branddox-symbol-mono.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/brand/branddox-symbol-mono.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "theme_color": "#262833",
+  "background_color": "#FFFFFF",
+  "display": "standalone"
+}

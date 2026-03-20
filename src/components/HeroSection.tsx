@@ -35,7 +35,7 @@ export default function HeroSection({ heroImageUrls = [] }: Props) {
         }}
       />
 
-      <div className="relative mx-auto grid max-w-7xl grid-cols-1 gap-14 px-4 py-20 sm:px-6 md:py-24 lg:grid-cols-2 lg:gap-10 lg:px-8 lg:py-28">
+      <div className="relative mx-auto grid max-w-7xl grid-cols-1 gap-10 px-4 py-16 sm:gap-14 sm:px-6 sm:py-20 md:py-24 lg:grid-cols-2 lg:gap-10 lg:px-8 lg:py-28">
         {/* Left */}
         <div className="flex flex-col justify-center">
           <div className="inline-flex w-fit items-center gap-2 rounded-full border border-[var(--brand-mint)]/20 bg-[var(--brand-mint)]/10 px-4 py-2 text-xs font-medium tracking-[0.18em] text-[var(--brand-mint)] uppercase">
@@ -44,7 +44,7 @@ export default function HeroSection({ heroImageUrls = [] }: Props) {
             Branding & Design
           </div>
 
-          <h1 className="mt-6 max-w-xl text-5xl font-semibold leading-[0.95] tracking-tight sm:text-6xl lg:text-7xl">
+          <h1 className="mt-6 max-w-xl text-4xl font-semibold leading-[0.95] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
             Make Your Channel
             <span className="block text-[var(--brand-mint)]">Impossible to Ignore.</span>
           </h1>
@@ -97,28 +97,28 @@ export default function HeroSection({ heroImageUrls = [] }: Props) {
             style={{ background: "var(--brand-green)" }}
           />
 
-          <div className="relative z-10 h-[440px] w-full max-w-[560px] sm:h-[520px]">
+          <div className="relative z-10 h-[340px] w-full max-w-[560px] sm:h-[520px]">
             {/* Top small */}
-            <div className="absolute left-[2%] top-[4%] h-[180px] w-[58%] overflow-hidden rounded-[24px] border border-white/15 bg-white/5 shadow-2xl shadow-black/30 backdrop-blur-sm transition duration-500 hover:rotate-[-5deg] hover:shadow-[var(--brand-mint)]/20 animate-float-hero">
+            <div className="absolute left-[2%] top-[4%] h-[130px] w-[56%] overflow-hidden rounded-[20px] border border-white/15 bg-white/5 shadow-2xl shadow-black/30 backdrop-blur-sm transition duration-500 hover:rotate-[-5deg] hover:shadow-[var(--brand-mint)]/20 sm:h-[180px] sm:w-[58%] sm:rounded-[24px] animate-float-hero">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={thumbs[0]} alt="" className="h-full w-full object-cover" />
             </div>
             {/* Middle right */}
-            <div className="absolute right-0 top-[2%] h-[200px] w-[55%] overflow-hidden rounded-[22px] border border-white/15 bg-white/5 shadow-xl shadow-black/25 backdrop-blur-sm transition duration-500 hover:rotate-[4deg] animate-float-hero animate-float-hero-delay-1">
+            <div className="absolute right-0 top-[2%] h-[150px] w-[54%] overflow-hidden rounded-[18px] border border-white/15 bg-white/5 shadow-xl shadow-black/25 backdrop-blur-sm transition duration-500 hover:rotate-[4deg] sm:h-[200px] sm:w-[55%] sm:rounded-[22px] animate-float-hero animate-float-hero-delay-1">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={thumbs[1]} alt="" className="h-full w-full object-cover" />
             </div>
             {/* Middle left */}
-            <div className="absolute bottom-[18%] left-[6%] h-[200px] w-[52%] overflow-hidden rounded-[22px] border border-white/15 bg-white/5 shadow-xl shadow-black/25 backdrop-blur-sm transition duration-500 hover:rotate-[3deg] animate-float-hero animate-float-hero-delay-2">
+            <div className="absolute bottom-[20%] left-[6%] h-[150px] w-[52%] overflow-hidden rounded-[18px] border border-white/15 bg-white/5 shadow-xl shadow-black/25 backdrop-blur-sm transition duration-500 hover:rotate-[3deg] sm:bottom-[18%] sm:h-[200px] sm:rounded-[22px] animate-float-hero animate-float-hero-delay-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={thumbs[2]} alt="" className="h-full w-full object-cover" />
             </div>
             {/* Bottom big — main focus */}
-            <div className="absolute bottom-0 right-[4%] h-[260px] w-[68%] overflow-hidden rounded-[26px] border-2 border-[var(--brand-mint)]/25 bg-white/5 shadow-2xl shadow-black/40 backdrop-blur-sm transition duration-500 hover:rotate-[-2deg] hover:shadow-[var(--brand-mint)]/25 animate-float-hero animate-float-hero-delay-3">
+            <div className="absolute bottom-0 right-[4%] h-[180px] w-[68%] overflow-hidden rounded-[20px] border-2 border-[var(--brand-mint)]/25 bg-white/5 shadow-2xl shadow-black/40 backdrop-blur-sm transition duration-500 hover:rotate-[-2deg] hover:shadow-[var(--brand-mint)]/25 sm:h-[260px] sm:rounded-[26px] animate-float-hero animate-float-hero-delay-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={thumbs[3]} alt="" className="h-full w-full object-cover" />
             </div>
-            <div className="absolute left-[42%] top-[38%] z-10 rounded-full border border-white/10 bg-[#10182f]/95 px-4 py-3 shadow-xl backdrop-blur-md">
+            <div className="absolute left-[42%] top-[38%] z-10 hidden rounded-full border border-white/10 bg-[#10182f]/95 px-4 py-3 shadow-xl backdrop-blur-md sm:block">
               <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
                 Results-first
               </p>

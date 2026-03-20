@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Branddox – Branding Design | Be Seen. Be Trusted.",
   description:
-    "Your trusted digital growth partner. Graphics design, Canva, YouTube services, SEO, thumbnails. We work on Fiverr. Transforming reputations, one click at a time.",
+    "Your trusted digital growth partner. Graphics design, Canva, YouTube services, SEO, thumbnails. Transforming reputations, one click at a time.",
   keywords: [
     "Branddox",
     "branding design",
@@ -26,8 +26,19 @@ export const metadata: Metadata = {
     "YouTube services",
     "SEO",
     "thumbnail design",
-    "Fiverr",
   ],
+  icons: {
+    icon: [
+      { url: "/brand/branddox-symbol-mono.png", type: "image/png" },
+    ],
+    apple: [{ url: "/brand/branddox-symbol-mono.png", sizes: "180x180", type: "image/png" }],
+  },
+  manifest: "/site.webmanifest",
+  openGraph: {
+    title: "Branddox – Branding Design",
+    description: "Your trusted digital growth partner. Be seen. Be trusted.",
+    images: ["/og-image.png"],
+  },
 };
 
 export default function RootLayout({

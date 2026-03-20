@@ -5,14 +5,19 @@ const BACKEND =
   (process.env.VERCEL ? "https://branddox-api.vercel.app" : "http://localhost:4000");
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   context: { params: Promise<{ path?: string[] }> }
 ) {
   const { path = [] } = await context.params;
   const slug = path.join("/");
   const url = `${BACKEND.replace(/\/$/, "")}/${slug}`;
   try {
-    const res = await fetch(url, { cache: "no-store" });
+    const adminSecret = req.cookies.get("branddox_admin")?.value;
+    const headers: Record<string, string> = {};
+    if (adminSecret) headers["x-admin-secret"] = adminSecret;
+    const cookie = req.headers.get("cookie");
+    if (cookie) headers["cookie"] = cookie;
+    const res = await fetch(url, { cache: "no-store", headers });
     const data = await res.json().catch(() => ({}));
     return NextResponse.json(data, { status: res.status });
   } catch (e) {
@@ -65,6 +70,10 @@ async function proxy(
     const body = await req.arrayBuffer();
     const headers: Record<string, string> = {};
     if (contentType) headers["Content-Type"] = contentType;
+    const adminSecret = req.cookies.get("branddox_admin")?.value;
+    if (adminSecret) headers["x-admin-secret"] = adminSecret;
+    const cookie = req.headers.get("cookie");
+    if (cookie) headers["cookie"] = cookie;
     const res = await fetch(url, {
       method,
       headers,

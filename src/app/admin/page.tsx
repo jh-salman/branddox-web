@@ -29,6 +29,7 @@ const ASPECT_OPTIONS: { value: PortfolioItem["aspectClass"]; label: string }[] =
 
 export default function AdminPage() {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [items, setItems] = useState<PortfolioItem[]>([]);
@@ -72,7 +73,7 @@ export default function AdminPage() {
   const [editClientForm, setEditClientForm] = useState<Partial<ClientItem>>({});
 
   const checkAuth = useCallback(async () => {
-    const res = await fetch("/api/admin/me");
+    const res = await fetch("/api/admin/auth/me", { cache: "no-store" });
     const data = await res.json();
     setLoggedIn(data.ok === true);
   }, []);
@@ -129,22 +130,28 @@ export default function AdminPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError("");
-    const res = await fetch("/api/admin/login", {
+    const res = await fetch("/api/admin/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ email, password }),
     });
     const data = await res.json();
     if (!res.ok) {
       setLoginError(data.error || "Login failed");
       return;
     }
-    setLoggedIn(true);
+    const me = await fetch("/api/admin/auth/me", { cache: "no-store" });
+    const meData = await me.json().catch(() => ({ ok: false }));
+    setLoggedIn(meData.ok === true);
+    if (meData.ok !== true) {
+      setLoginError("Logged in, but this account is not an admin.");
+    }
+    setEmail("");
     setPassword("");
   };
 
   const handleLogout = async () => {
-    await fetch("/api/admin/logout", { method: "POST" });
+    await fetch("/api/admin/auth/logout", { method: "POST" });
     setLoggedIn(false);
   };
 
@@ -434,12 +441,21 @@ export default function AdminPage() {
           <h1 className="mb-4 text-xl font-bold text-[var(--brand-dark)]">Admin login</h1>
           <form onSubmit={handleLogin} className="space-y-3">
             <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Admin email"
+              className="w-full rounded-lg border border-[var(--brand-dark)]/20 px-3 py-2 text-[var(--brand-dark)]"
+              autoComplete="email"
+              autoFocus
+            />
+            <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
               className="w-full rounded-lg border border-[var(--brand-dark)]/20 px-3 py-2 text-[var(--brand-dark)]"
-              autoFocus
+              autoComplete="current-password"
             />
             {loginError && (
               <p className="text-sm text-red-600">{loginError}</p>

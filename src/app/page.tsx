@@ -61,10 +61,12 @@ export default async function Home() {
         }))
       : null;
 
-  const heroImageUrls = portfolioItems
-    .slice(0, 4)
-    .map((p: { imageUrl?: string }) => p.imageUrl)
-    .filter(Boolean) as string[];
+  const heroImageUrls = [
+    "/portfolio/1.png",
+    "/portfolio/2.png",
+    "/portfolio/3.png",
+    "/portfolio/4.png",
+  ];
 
   const marqueeClients = clientItems.map(
     (c: { channelName: string; channelUrl: string }) => ({

@@ -1,13 +1,18 @@
 import Link from "next/link";
-import { MegaphoneIcon } from "./MegaphoneIcon";
+import Image from "next/image";
 
 export function Footer() {
   return (
     <footer className="border-t border-white/10 bg-[var(--brand-dark)] px-4 py-12 sm:px-6">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-8 sm:flex-row">
         <Link href="/" className="flex items-center gap-2">
-          <MegaphoneIcon className="h-8 w-8" accent="mint" />
-          <span className="text-lg font-bold text-white">Branddox</span>
+          <Image
+            src="/brand/branddox-logo-inverted.png"
+            alt="Branddox"
+            width={140}
+            height={32}
+            className="h-8 w-auto"
+          />
           <span className="text-sm font-normal uppercase tracking-widest text-[var(--brand-mint)]">
             Branding Design
           </span>
