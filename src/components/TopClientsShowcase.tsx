@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 
 export type ClientFromApi = {
   id: string;
   channelName: string;
   channelUrl: string;
   imageUrl: string;
+  logoUrl?: string;
   subscriberCount?: string;
   description?: string;
 };
@@ -16,6 +18,7 @@ type DisplayClient = {
   name: string;
   url: string;
   image: string;
+  logo: string;
   subscribers?: string;
   description?: string;
   type?: string;
@@ -36,6 +39,7 @@ function mapApiToDisplay(clients: ClientFromApi[]): DisplayClient[] {
     name: c.channelName,
     url: c.channelUrl,
     image: c.imageUrl,
+    logo: c.logoUrl || c.imageUrl,
     subscribers: c.subscriberCount?.trim()
       ? c.subscriberCount.includes("subscriber")
         ? c.subscriberCount
@@ -62,11 +66,12 @@ function ClientTile({
       className={`group relative min-h-[220px] overflow-hidden border border-white/10 bg-white/[0.03] ${SIZE_SPAN[client.size]}`}
     >
       <div className="absolute inset-0">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src={client.image}
           alt={client.name}
-          className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+          fill
+          sizes="(max-width: 768px) 86vw, (max-width: 1280px) 40vw, 28vw"
+          className="object-cover transition duration-700 group-hover:scale-105"
         />
       </div>
 
@@ -118,7 +123,7 @@ type Props = {
 export default function TopClientsShowcase({ clients }: Props) {
   const displayClients = mapApiToDisplay(clients);
   const marqueeClients = [...displayClients, ...displayClients];
-  const featuredClients = displayClients.slice(0, 6);
+  const featuredClients = displayClients;
 
   return (
     <section className="relative overflow-hidden bg-[var(--brand-dark)] text-white">
@@ -161,11 +166,12 @@ export default function TopClientsShowcase({ clients }: Props) {
                     className="group flex shrink-0 items-center gap-3 text-white/70 transition hover:text-white"
                   >
                     <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full border border-white/10">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={client.image}
-                        alt=""
-                        className="h-full w-full object-cover"
+                      <Image
+                        src={client.logo}
+                        alt={`${client.name} logo`}
+                        fill
+                        sizes="28px"
+                        className="object-cover"
                       />
                     </div>
                     <span className="whitespace-nowrap text-sm font-medium sm:text-base">

@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
-
-const ADMIN_COOKIE = "branddox_admin";
+import { ADMIN_COOKIE_NAME } from "@/lib/admin-session";
 
 export async function POST() {
   const res = NextResponse.json({ ok: true });
-  res.cookies.set(ADMIN_COOKIE, "", { path: "/", maxAge: 0 });
+  res.cookies.set(ADMIN_COOKIE_NAME, "", {
+    path: "/",
+    maxAge: 0,
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+  });
   return res;
 }

@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  ADMIN_COOKIE_NAME,
+  verifyAdminSessionToken,
+  getAdminPasswordForProxy,
+} from "@/lib/admin-session";
 
 const BACKEND =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
@@ -12,9 +17,12 @@ export async function GET(
   const slug = path.join("/");
   const url = `${BACKEND.replace(/\/$/, "")}/${slug}`;
   try {
-    const adminSecret = req.cookies.get("branddox_admin")?.value;
+    const session = req.cookies.get(ADMIN_COOKIE_NAME)?.value;
     const headers: Record<string, string> = {};
-    if (adminSecret) headers["x-admin-secret"] = adminSecret;
+    if (session && (await verifyAdminSessionToken(session))) {
+      const pwd = getAdminPasswordForProxy();
+      if (pwd) headers["x-admin-secret"] = pwd;
+    }
     const cookie = req.headers.get("cookie");
     if (cookie) headers["cookie"] = cookie;
     const res = await fetch(url, { cache: "no-store", headers });
@@ -66,12 +74,14 @@ async function proxy(
   const url = `${BACKEND.replace(/\/$/, "")}/${slug}`;
   try {
     const contentType = req.headers.get("content-type") || "";
-    const isJson = contentType.includes("application/json");
     const body = await req.arrayBuffer();
     const headers: Record<string, string> = {};
     if (contentType) headers["Content-Type"] = contentType;
-    const adminSecret = req.cookies.get("branddox_admin")?.value;
-    if (adminSecret) headers["x-admin-secret"] = adminSecret;
+    const session = req.cookies.get(ADMIN_COOKIE_NAME)?.value;
+    if (session && (await verifyAdminSessionToken(session))) {
+      const pwd = getAdminPasswordForProxy();
+      if (pwd) headers["x-admin-secret"] = pwd;
+    }
     const cookie = req.headers.get("cookie");
     if (cookie) headers["cookie"] = cookie;
     const res = await fetch(url, {

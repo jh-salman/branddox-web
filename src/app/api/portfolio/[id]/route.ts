@@ -6,12 +6,11 @@ import {
   type PortfolioItem,
 } from "@/lib/portfolio-store";
 
-const ADMIN_COOKIE = "branddox_admin";
+import { ADMIN_COOKIE_NAME, verifyAdminSessionToken } from "@/lib/admin-session";
 
-function isAdmin(request: NextRequest): boolean {
-  const token = request.cookies.get(ADMIN_COOKIE)?.value;
-  const secret = process.env.ADMIN_PASSWORD || process.env.ADMIN_SECRET;
-  return !!secret && token === secret;
+async function isAdmin(request: NextRequest): Promise<boolean> {
+  const token = request.cookies.get(ADMIN_COOKIE_NAME)?.value;
+  return verifyAdminSessionToken(token);
 }
 
 export async function GET(
@@ -29,7 +28,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!isAdmin(request)) {
+  if (!(await isAdmin(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await params;
@@ -65,7 +64,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!isAdmin(request)) {
+  if (!(await isAdmin(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await params;

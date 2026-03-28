@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 import type { PortfolioItem } from "@/lib/portfolio-types";
 import { PORTFOLIO_CATEGORIES } from "@/lib/portfolio-types";
 import { api, API_BASE } from "@/lib/api";
-import type { ServiceItem, ClientItem } from "@/lib/api";
+import type { ServiceItem, ClientItem, YoutubeClientResolved } from "@/lib/api";
 
 const CATEGORIES = PORTFOLIO_CATEGORIES;
 
@@ -28,10 +30,8 @@ const ASPECT_OPTIONS: { value: PortfolioItem["aspectClass"]; label: string }[] =
 ];
 
 export default function AdminPage() {
+  const router = useRouter();
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loginError, setLoginError] = useState("");
   const [items, setItems] = useState<PortfolioItem[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -67,16 +67,30 @@ export default function AdminPage() {
   const [editServiceForm, setEditServiceForm] = useState<Partial<ServiceItem>>({});
 
   const [clients, setClients] = useState<ClientItem[]>([]);
-  const [clientForm, setClientForm] = useState({ channelName: "", channelUrl: "", subscriberCount: "", description: "" });
+  const [clientForm, setClientForm] = useState({
+    channelName: "",
+    channelUrl: "",
+    subscriberCount: "",
+    description: "",
+  });
   const [clientUploadFile, setClientUploadFile] = useState<File | null>(null);
+  const [clientLogoUploadFile, setClientLogoUploadFile] = useState<File | null>(null);
   const [editingClientId, setEditingClientId] = useState<string | null>(null);
+  const [editClientLogoUploadFile, setEditClientLogoUploadFile] = useState<File | null>(null);
   const [editClientForm, setEditClientForm] = useState<Partial<ClientItem>>({});
+  const [youtubeResolvedAdd, setYoutubeResolvedAdd] = useState<YoutubeClientResolved | null>(null);
+  const [fetchingYoutubeAdd, setFetchingYoutubeAdd] = useState(false);
+  const [fetchingYoutubeEdit, setFetchingYoutubeEdit] = useState(false);
 
   const checkAuth = useCallback(async () => {
-    const res = await fetch("/api/admin/auth/me", { cache: "no-store" });
+    const res = await fetch("/api/admin/me", { credentials: "include" });
     const data = await res.json();
-    setLoggedIn(data.ok === true);
-  }, []);
+    const ok = data.ok === true;
+    setLoggedIn(ok);
+    if (!ok) {
+      router.replace("/admin/login");
+    }
+  }, [router]);
 
   const fetchItems = useCallback(async () => {
     try {
@@ -127,32 +141,11 @@ export default function AdminPage() {
     if (loggedIn && adminTab === "clients") fetchClients();
   }, [loggedIn, adminTab, fetchClients]);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoginError("");
-    const res = await fetch("/api/admin/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setLoginError(data.error || "Login failed");
-      return;
-    }
-    const me = await fetch("/api/admin/auth/me", { cache: "no-store" });
-    const meData = await me.json().catch(() => ({ ok: false }));
-    setLoggedIn(meData.ok === true);
-    if (meData.ok !== true) {
-      setLoginError("Logged in, but this account is not an admin.");
-    }
-    setEmail("");
-    setPassword("");
-  };
-
   const handleLogout = async () => {
-    await fetch("/api/admin/auth/logout", { method: "POST" });
+    await fetch("/api/admin/logout", { method: "POST", credentials: "include" });
     setLoggedIn(false);
+    router.push("/admin/login");
+    router.refresh();
   };
 
   const handleCategoryChange = (category: (typeof CATEGORIES)[number]) => {
@@ -352,28 +345,99 @@ export default function AdminPage() {
     }
   };
 
+  const handleFetchYoutubeAdd = async () => {
+    const raw = clientForm.channelUrl.trim();
+    if (!raw) {
+      setError("Paste a YouTube channel URL first");
+      return;
+    }
+    setFetchingYoutubeAdd(true);
+    setError("");
+    try {
+      const data = await api.resolveYoutubeClient({ channelUrl: raw });
+      setYoutubeResolvedAdd(data);
+      setClientForm((f) => ({
+        ...f,
+        channelName: data.channelName,
+        channelUrl: data.channelUrl,
+        subscriberCount: data.subscriberCount ?? "",
+        description: data.description ?? "",
+      }));
+      setClientUploadFile(null);
+      setClientLogoUploadFile(null);
+    } catch (e) {
+      setYoutubeResolvedAdd(null);
+      setError(e instanceof Error ? e.message : "Could not fetch YouTube channel");
+    } finally {
+      setFetchingYoutubeAdd(false);
+    }
+  };
+
+  const handleFetchYoutubeEdit = async () => {
+    const raw = (editClientForm.channelUrl ?? "").trim();
+    if (!raw) {
+      setError("Enter channel URL first");
+      return;
+    }
+    setFetchingYoutubeEdit(true);
+    setError("");
+    try {
+      const data = await api.resolveYoutubeClient({ channelUrl: raw });
+      setEditClientForm((f) => ({
+        ...f,
+        channelName: data.channelName,
+        channelUrl: data.channelUrl,
+        imageUrl: data.imageUrl,
+        logoUrl: data.logoUrl,
+        subscriberCount: data.subscriberCount ?? "",
+        description: data.description ?? "",
+      }));
+      setEditClientLogoUploadFile(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not fetch YouTube channel");
+    } finally {
+      setFetchingYoutubeEdit(false);
+    }
+  };
+
   const handleAddClient = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setError("");
     try {
-      if (clientUploadFile) {
+      if (youtubeResolvedAdd) {
+        await api.createClient({
+          channelName: clientForm.channelName.trim(),
+          channelUrl: youtubeResolvedAdd.channelUrl,
+          imageUrl: youtubeResolvedAdd.imageUrl,
+          logoUrl: youtubeResolvedAdd.logoUrl,
+          subscriberCount: clientForm.subscriberCount.trim() || youtubeResolvedAdd.subscriberCount,
+          description: clientForm.description.trim() || youtubeResolvedAdd.description,
+        });
+      } else if (clientUploadFile && clientLogoUploadFile) {
         const { url } = await api.uploadPortfolioImage(clientUploadFile);
         const imageUrl = url.startsWith("http") ? url : `${API_BASE.replace(/\/$/, "")}${url}`;
+        const uploadedLogo = await api.uploadPortfolioImage(clientLogoUploadFile);
+        const logoUrl = uploadedLogo.url.startsWith("http")
+          ? uploadedLogo.url
+          : `${API_BASE.replace(/\/$/, "")}${uploadedLogo.url}`;
         await api.createClient({
           channelName: clientForm.channelName.trim(),
           channelUrl: clientForm.channelUrl.trim(),
           imageUrl,
+          logoUrl,
           subscriberCount: clientForm.subscriberCount.trim() || undefined,
           description: clientForm.description.trim() || undefined,
         });
       } else {
-        setError("Upload a channel image (logo/thumbnail)");
+        setError('Click "Fetch from YouTube" or upload both banner and logo files.');
         setSubmitting(false);
         return;
       }
       setClientForm({ channelName: "", channelUrl: "", subscriberCount: "", description: "" });
       setClientUploadFile(null);
+      setClientLogoUploadFile(null);
+      setYoutubeResolvedAdd(null);
       await fetchClients();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add client");
@@ -383,21 +447,40 @@ export default function AdminPage() {
   };
 
   const handleUpdateClient = async (id: string) => {
-    if (!editClientForm.channelName && !editClientForm.channelUrl && !editClientForm.imageUrl && !editClientForm.subscriberCount && !editClientForm.description) {
+    if (
+      !editClientForm.channelName &&
+      !editClientForm.channelUrl &&
+      !editClientForm.imageUrl &&
+      !editClientForm.logoUrl &&
+      !editClientForm.subscriberCount &&
+      !editClientForm.description &&
+      !editClientLogoUploadFile
+    ) {
       setEditingClientId(null);
       return;
     }
     setSubmitting(true);
     setError("");
     try {
+      let logoUrl: string | undefined;
+      if (editClientLogoUploadFile) {
+        const uploadedLogo = await api.uploadPortfolioImage(editClientLogoUploadFile);
+        logoUrl = uploadedLogo.url.startsWith("http")
+          ? uploadedLogo.url
+          : `${API_BASE.replace(/\/$/, "")}${uploadedLogo.url}`;
+      } else if (editClientForm.logoUrl !== undefined && String(editClientForm.logoUrl).trim() !== "") {
+        logoUrl = editClientForm.logoUrl.trim();
+      }
       await api.updateClient(id, {
         channelName: editClientForm.channelName?.trim(),
         channelUrl: editClientForm.channelUrl?.trim(),
         imageUrl: editClientForm.imageUrl?.trim(),
+        ...(logoUrl !== undefined ? { logoUrl } : {}),
         subscriberCount: editClientForm.subscriberCount?.trim(),
         description: editClientForm.description?.trim(),
       });
       setEditingClientId(null);
+      setEditClientLogoUploadFile(null);
       setEditClientForm({});
       await fetchClients();
     } catch (err) {
@@ -436,44 +519,8 @@ export default function AdminPage() {
 
   if (loggedIn === false) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--brand-dark)] p-4">
-        <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-lg">
-          <h1 className="mb-4 text-xl font-bold text-[var(--brand-dark)]">Admin login</h1>
-          <form onSubmit={handleLogin} className="space-y-3">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Admin email"
-              className="w-full rounded-lg border border-[var(--brand-dark)]/20 px-3 py-2 text-[var(--brand-dark)]"
-              autoComplete="email"
-              autoFocus
-            />
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              className="w-full rounded-lg border border-[var(--brand-dark)]/20 px-3 py-2 text-[var(--brand-dark)]"
-              autoComplete="current-password"
-            />
-            {loginError && (
-              <p className="text-sm text-red-600">{loginError}</p>
-            )}
-            <button
-              type="submit"
-              className="w-full rounded-lg bg-[var(--brand-mint)] px-4 py-2 font-semibold text-[var(--brand-dark)] hover:bg-[var(--brand-green)]"
-            >
-              Log in
-            </button>
-          </form>
-          <Link
-            href="/"
-            className="mt-4 block text-center text-sm text-[var(--brand-dark)]/70 hover:underline"
-          >
-            ← Back to site
-          </Link>
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-[var(--brand-dark)] text-white">
+        <p className="text-sm">Redirecting to login…</p>
       </div>
     );
   }
@@ -641,7 +688,15 @@ export default function AdminPage() {
                   )}
                   <div className="flex flex-wrap gap-2">
                     {(uploadedImageUrls.length > 0 ? uploadedImageUrls : uploadedImageUrl ? [uploadedImageUrl] : []).map((url, i) => (
-                      <img key={i} src={url} alt={`Preview ${i + 1}`} className="h-24 w-auto rounded-lg object-cover" />
+                      <Image
+                        key={i}
+                        src={url}
+                        alt={`Preview ${i + 1}`}
+                        width={192}
+                        height={96}
+                        sizes="192px"
+                        className="h-24 w-auto rounded-lg object-cover"
+                      />
                     ))}
                   </div>
                 </div>
@@ -996,23 +1051,73 @@ export default function AdminPage() {
                 <input
                   type="url"
                   value={clientForm.channelUrl}
-                  onChange={(e) => setClientForm((f) => ({ ...f, channelUrl: e.target.value }))}
+                  onChange={(e) => {
+                    setClientForm((f) => ({ ...f, channelUrl: e.target.value }));
+                    setYoutubeResolvedAdd(null);
+                  }}
                   placeholder="https://youtube.com/@..."
                   className="w-full rounded-lg border border-[var(--brand-dark)]/20 px-3 py-2"
                   required
                 />
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleFetchYoutubeAdd}
+                    disabled={submitting || fetchingYoutubeAdd}
+                    className="rounded-lg border border-[var(--brand-dark)]/20 bg-[var(--brand-dark)]/[0.04] px-3 py-2 text-sm font-medium text-[var(--brand-dark)] hover:bg-[var(--brand-dark)]/[0.08] disabled:opacity-50"
+                  >
+                    {fetchingYoutubeAdd ? "Fetching…" : "Fetch from YouTube"}
+                  </button>
+                  {youtubeResolvedAdd && (
+                    <span className="text-xs font-medium text-[var(--brand-green)]">
+                      Fetched — logo & banner saved on Cloudinary
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1 text-xs text-[var(--brand-dark)]/60">
+                  Uses YouTube Data API + Cloudinary (set GOOGLE_YOUTUBE_API_KEY on the API).
+                </p>
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-[var(--brand-dark)]">Channel image (logo/thumbnail)</label>
+              <label className="mb-1 block text-sm font-medium text-[var(--brand-dark)]">Client image (thumbnail/channel banner)</label>
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => setClientUploadFile(e.target.files?.[0] ?? null)}
+                onChange={(e) => {
+                  setClientUploadFile(e.target.files?.[0] ?? null);
+                  setYoutubeResolvedAdd(null);
+                }}
                 className="w-full rounded-lg border border-[var(--brand-dark)]/20 px-3 py-2 text-sm"
-                required
+                required={!youtubeResolvedAdd}
+                disabled={!!youtubeResolvedAdd}
               />
-              <p className="mt-1 text-xs text-[var(--brand-dark)]/60">Uploaded via API to Cloudinary.</p>
+              <p className="mt-1 text-xs text-[var(--brand-dark)]/60">
+                {youtubeResolvedAdd
+                  ? "Using banner from YouTube fetch."
+                  : "Uploaded via API to Cloudinary."}
+              </p>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[var(--brand-dark)]">
+                Logo file (for top/marquee)
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  setClientLogoUploadFile(e.target.files?.[0] ?? null);
+                  setYoutubeResolvedAdd(null);
+                }}
+                className="w-full rounded-lg border border-[var(--brand-dark)]/20 px-3 py-2 text-sm"
+                required={!youtubeResolvedAdd}
+                disabled={!!youtubeResolvedAdd}
+              />
+              <p className="mt-1 text-xs text-[var(--brand-dark)]/60">
+                {youtubeResolvedAdd
+                  ? "Using channel avatar from YouTube fetch."
+                  : "Uploaded via API to Cloudinary."}
+              </p>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
@@ -1066,12 +1171,26 @@ export default function AdminPage() {
                       className="w-full rounded border px-2 py-1 text-sm"
                       placeholder="Channel URL"
                     />
+                    <button
+                      type="button"
+                      onClick={handleFetchYoutubeEdit}
+                      disabled={submitting || fetchingYoutubeEdit}
+                      className="rounded border border-[var(--brand-dark)]/20 bg-[var(--brand-dark)]/[0.04] px-2 py-1 text-sm text-[var(--brand-dark)] hover:bg-[var(--brand-dark)]/[0.08] disabled:opacity-50"
+                    >
+                      {fetchingYoutubeEdit ? "Fetching…" : "Fetch from YouTube"}
+                    </button>
                     <input
                       type="url"
                       value={editClientForm.imageUrl ?? c.imageUrl}
                       onChange={(e) => setEditClientForm((f) => ({ ...f, imageUrl: e.target.value }))}
                       className="w-full rounded border px-2 py-1 text-sm"
-                      placeholder="Image URL"
+                      placeholder="Client image URL (thumbnail/banner)"
+                    />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setEditClientLogoUploadFile(e.target.files?.[0] ?? null)}
+                      className="w-full rounded border px-2 py-1 text-sm"
                     />
                     <input
                       type="text"
@@ -1098,7 +1217,11 @@ export default function AdminPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => { setEditingClientId(null); setEditClientForm({}); }}
+                        onClick={() => {
+                          setEditingClientId(null);
+                          setEditClientForm({});
+                          setEditClientLogoUploadFile(null);
+                        }}
                         className="rounded bg-[var(--brand-dark)]/10 px-2 py-1 text-sm"
                       >
                         Cancel
@@ -1107,19 +1230,31 @@ export default function AdminPage() {
                   </div>
                 ) : (
                   <>
-                    <a href={c.channelUrl} target="_blank" rel="noopener noreferrer" className="block">
-                      <div className="aspect-square w-16 overflow-hidden rounded-full bg-[var(--brand-dark)]/10">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={c.imageUrl} alt={c.channelName} className="h-full w-full object-cover" />
+                    <a href={c.channelUrl} target="_blank" rel="noopener noreferrer" className="block max-w-full">
+                      {/* next/image `fill` requires a positioned parent; without `relative` the image can cover the whole viewport */}
+                      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-[var(--brand-dark)]/10">
+                        <Image
+                          src={c.logoUrl || c.imageUrl}
+                          alt={`${c.channelName} logo`}
+                          fill
+                          sizes="64px"
+                          className="object-cover"
+                        />
                       </div>
                       <p className="mt-2 font-bold text-[var(--brand-dark)]">{c.channelName}</p>
                       {c.subscriberCount && <p className="text-sm text-[var(--brand-dark)]/70">{c.subscriberCount} subs</p>}
-                      {c.description && <p className="text-sm text-[var(--brand-dark)]/60">{c.description}</p>}
+                      {c.description && (
+                        <p className="mt-1 line-clamp-4 text-sm text-[var(--brand-dark)]/60">{c.description}</p>
+                      )}
                     </a>
                     <div className="mt-2 flex gap-2">
                       <button
                         type="button"
-                        onClick={() => { setEditingClientId(c.id); setEditClientForm({ ...c }); }}
+                        onClick={() => {
+                          setEditingClientId(c.id);
+                          setEditClientForm({ ...c });
+                          setEditClientLogoUploadFile(null);
+                        }}
                         className="text-sm text-[var(--brand-mint)] hover:underline"
                       >
                         Edit

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export type WorkItem = {
   id: string;
@@ -70,11 +71,13 @@ export default function WorkPreviewSection({ items = [] }: Props) {
               className="group relative overflow-hidden rounded-[28px] border border-black/6 bg-[#f8faf9] sm:col-span-2 lg:row-span-2"
             >
               <div className="relative aspect-[16/10] overflow-hidden sm:aspect-auto sm:h-full sm:min-h-[280px] lg:min-h-[360px]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <Image
                   src={featured.imageUrl}
                   alt={featured.title || featured.category}
-                  className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                  fill
+                  priority
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 66vw"
+                  className="object-cover transition duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
                 <div className="absolute inset-0 bg-black/0 transition duration-300 group-hover:bg-black/40" />
@@ -107,11 +110,12 @@ export default function WorkPreviewSection({ items = [] }: Props) {
               className="group relative overflow-hidden rounded-[28px] border border-black/6 bg-[#f8faf9]"
             >
               <div className="relative aspect-[16/10] overflow-hidden">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <Image
                   src={item.imageUrl}
                   alt={item.title || item.category}
-                  className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  className="object-cover transition duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
                 <div className="absolute inset-0 bg-black/0 transition duration-300 group-hover:bg-black/50" />

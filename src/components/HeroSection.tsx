@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 
 const PLACEHOLDER_THUMB = (i: number) =>
   `https://placehold.co/400x225/262833/38e991?text=Thumb+${i + 1}`;
@@ -100,23 +101,44 @@ export default function HeroSection({ heroImageUrls = [] }: Props) {
           <div className="relative z-10 h-[340px] w-full max-w-[560px] sm:h-[520px]">
             {/* Top small */}
             <div className="absolute left-[2%] top-[4%] h-[130px] w-[56%] overflow-hidden rounded-[20px] border border-white/15 bg-white/5 shadow-2xl shadow-black/30 backdrop-blur-sm transition duration-500 hover:rotate-[-5deg] hover:shadow-[var(--brand-mint)]/20 sm:h-[180px] sm:w-[58%] sm:rounded-[24px] animate-float-hero">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={thumbs[0]} alt="" className="h-full w-full object-cover" />
+              <Image
+                src={thumbs[0]}
+                alt="Featured Branddox work 1"
+                fill
+                priority
+                sizes="(max-width: 640px) 56vw, (max-width: 1024px) 34vw, 26vw"
+                className="object-cover"
+              />
             </div>
             {/* Middle right */}
             <div className="absolute right-0 top-[2%] h-[150px] w-[54%] overflow-hidden rounded-[18px] border border-white/15 bg-white/5 shadow-xl shadow-black/25 backdrop-blur-sm transition duration-500 hover:rotate-[4deg] sm:h-[200px] sm:w-[55%] sm:rounded-[22px] animate-float-hero animate-float-hero-delay-1">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={thumbs[1]} alt="" className="h-full w-full object-cover" />
+              <Image
+                src={thumbs[1]}
+                alt="Featured Branddox work 2"
+                fill
+                sizes="(max-width: 640px) 54vw, (max-width: 1024px) 32vw, 24vw"
+                className="object-cover"
+              />
             </div>
             {/* Middle left */}
             <div className="absolute bottom-[20%] left-[6%] h-[150px] w-[52%] overflow-hidden rounded-[18px] border border-white/15 bg-white/5 shadow-xl shadow-black/25 backdrop-blur-sm transition duration-500 hover:rotate-[3deg] sm:bottom-[18%] sm:h-[200px] sm:rounded-[22px] animate-float-hero animate-float-hero-delay-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={thumbs[2]} alt="" className="h-full w-full object-cover" />
+              <Image
+                src={thumbs[2]}
+                alt="Featured Branddox work 3"
+                fill
+                sizes="(max-width: 640px) 52vw, (max-width: 1024px) 31vw, 23vw"
+                className="object-cover"
+              />
             </div>
             {/* Bottom big — main focus */}
             <div className="absolute bottom-0 right-[4%] h-[180px] w-[68%] overflow-hidden rounded-[20px] border-2 border-[var(--brand-mint)]/25 bg-white/5 shadow-2xl shadow-black/40 backdrop-blur-sm transition duration-500 hover:rotate-[-2deg] hover:shadow-[var(--brand-mint)]/25 sm:h-[260px] sm:rounded-[26px] animate-float-hero animate-float-hero-delay-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={thumbs[3]} alt="" className="h-full w-full object-cover" />
+              <Image
+                src={thumbs[3]}
+                alt="Featured Branddox work 4"
+                fill
+                sizes="(max-width: 640px) 68vw, (max-width: 1024px) 40vw, 30vw"
+                className="object-cover"
+              />
             </div>
             <div className="absolute left-[42%] top-[38%] z-10 hidden rounded-full border border-white/10 bg-[#10182f]/95 px-4 py-3 shadow-xl backdrop-blur-md sm:block">
               <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">

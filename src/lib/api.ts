@@ -84,6 +84,7 @@ export type ClientItem = {
   channelName: string;
   channelUrl: string;
   imageUrl: string;
+  logoUrl?: string;
   subscriberCount?: string;
   description?: string;
   sortOrder?: number;
@@ -93,9 +94,20 @@ export type CreateClientBody = {
   channelName: string;
   channelUrl: string;
   imageUrl: string;
+  logoUrl?: string;
   subscriberCount?: string;
   description?: string;
   sortOrder?: number;
+};
+
+/** POST /clients/resolve-youtube — admin; returns Cloudinary URLs for logo + banner */
+export type YoutubeClientResolved = {
+  channelName: string;
+  channelUrl: string;
+  subscriberCount?: string;
+  description?: string;
+  logoUrl: string;
+  imageUrl: string;
 };
 
 async function request<T>(
@@ -111,6 +123,7 @@ async function request<T>(
   }
   const res = await fetch(url.toString(), {
     ...init,
+    credentials: typeof window !== "undefined" ? "include" : init.credentials,
     headers: { "Content-Type": "application/json", ...init.headers },
   });
   if (!res.ok) {
@@ -266,6 +279,14 @@ export const api = {
     return request<void>(`/clients/${id}`, { method: "DELETE" });
   },
 
+  /** POST /clients/resolve-youtube — fetch channel + upload images to Cloudinary (admin). */
+  resolveYoutubeClient(body: { channelUrl: string }) {
+    return request<YoutubeClientResolved>("/clients/resolve-youtube", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+
   /** POST /upload – upload portfolio image; returns { url } (Cloudinary URL). */
   async uploadPortfolioImage(file: File): Promise<{ url: string }> {
     const formData = new FormData();
@@ -273,6 +294,7 @@ export const api = {
     const res = await fetch(`${API_BASE}/upload`, {
       method: "POST",
       body: formData,
+      credentials: typeof window !== "undefined" ? "include" : undefined,
       // Do not set Content-Type; browser sets multipart boundary
     });
     if (!res.ok) {
