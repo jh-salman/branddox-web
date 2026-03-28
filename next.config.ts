@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "fiverr-res.cloudinary.com", pathname: "/**" },
       { protocol: "https", hostname: "res.cloudinary.com", pathname: "/**" },
       { protocol: "https", hostname: "placehold.co", pathname: "/**" },
+      { protocol: "https", hostname: "i.ytimg.com", pathname: "/**" },
     ],
   },
 };

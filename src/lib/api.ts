@@ -52,6 +52,8 @@ export type PortfolioItem = {
   aspectClass: "tall" | "square" | "wide" | "xtall";
   width?: number;
   height?: number;
+  clientId?: string | null;
+  youtubeVideoId?: string | null;
 };
 
 /** Matches backend POST /portfolio (Zod createSchema): required category, imageUrl; optional title, aspectClass, width, height */
@@ -62,6 +64,33 @@ export type CreatePortfolioBody = {
   aspectClass?: "tall" | "square" | "wide" | "xtall";
   width?: number;
   height?: number;
+  clientId?: string | null;
+  youtubeVideoId?: string | null;
+};
+
+export type YoutubeVideoThumbRow = {
+  videoId: string;
+  title: string;
+  thumbnailUrl: string;
+};
+
+export type YoutubeThumbnailsPreviewResponse = {
+  dryRun: true;
+  channelId: string;
+  channelTitle: string;
+  channelUrl: string;
+  videos: YoutubeVideoThumbRow[];
+};
+
+export type YoutubeThumbnailsImportResponse = {
+  dryRun: false;
+  channelId: string;
+  channelTitle: string;
+  channelUrl: string;
+  videos: YoutubeVideoThumbRow[];
+  created: PortfolioItem[];
+  skipped: number;
+  imported: number;
 };
 
 export type ServiceItem = {
@@ -81,6 +110,7 @@ export type CreateServiceBody = {
 
 export type ClientItem = {
   id: string;
+  slug: string;
   channelName: string;
   channelUrl: string;
   imageUrl: string;
@@ -98,6 +128,7 @@ export type CreateClientBody = {
   subscriberCount?: string;
   description?: string;
   sortOrder?: number;
+  slug?: string;
 };
 
 /** POST /clients/resolve-youtube — admin; returns Cloudinary URLs for logo + banner */
@@ -204,9 +235,15 @@ export const api = {
     });
   },
 
-  /** GET /portfolio – list all (from database) */
-  getPortfolio() {
-    return request<PortfolioItem[]>("/portfolio");
+  /** GET /portfolio – list (optional filter by client) */
+  getPortfolio(params?: { clientId?: string; clientSlug?: string }) {
+    const q: Record<string, string> = {};
+    if (params?.clientId) q.clientId = params.clientId;
+    if (params?.clientSlug) q.clientSlug = params.clientSlug;
+    return request<PortfolioItem[]>(
+      "/portfolio",
+      Object.keys(q).length ? { params: q } : undefined
+    );
   },
 
   /** GET /portfolio/:id */
@@ -217,6 +254,22 @@ export const api = {
   /** POST /portfolio – create (imageUrl = Cloudinary URL from upload) */
   createPortfolioItem(body: CreatePortfolioBody) {
     return request<PortfolioItem>("/portfolio", { method: "POST", body: JSON.stringify(body) });
+  },
+
+  /**
+   * POST /portfolio/youtube-thumbnails (admin)
+   * dryRun true = preview only; false = import as Thumbnails (stores youtubeVideoId for dedupe).
+   */
+  youtubePortfolioThumbnails(body: {
+    channelUrl: string;
+    clientId?: string | null;
+    maxResults?: number;
+    dryRun: boolean;
+  }) {
+    return request<YoutubeThumbnailsPreviewResponse | YoutubeThumbnailsImportResponse>(
+      "/portfolio/youtube-thumbnails",
+      { method: "POST", body: JSON.stringify(body) }
+    );
   },
 
   /** PATCH /portfolio/:id */
@@ -262,6 +315,11 @@ export const api = {
   /** GET /clients/:id */
   getClient(id: string) {
     return request<ClientItem>(`/clients/${id}`);
+  },
+
+  /** GET /clients/by-slug/:slug – public channel profile */
+  getClientBySlug(slug: string) {
+    return request<ClientItem>(`/clients/by-slug/${encodeURIComponent(slug)}`);
   },
 
   /** POST /clients */

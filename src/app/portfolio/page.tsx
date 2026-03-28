@@ -4,6 +4,7 @@ import { PortfolioGallery } from "@/components/PortfolioGallery";
 import { portfolioItems } from "@/data/portfolio";
 import { getPortfolioItems } from "@/lib/portfolio-store";
 import type { PortfolioItem } from "@/lib/portfolio-types";
+import type { ClientItem } from "@/lib/api";
 
 export const metadata = {
   title: "Portfolio – Branddox",
@@ -27,8 +28,23 @@ async function fetchPortfolioFromApi(): Promise<PortfolioItem[]> {
   }
 }
 
+async function fetchClientsFromApi(): Promise<ClientItem[]> {
+  const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
+  try {
+    const res = await fetch(`${base.replace(/\/$/, "")}/clients`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
 export default async function PortfolioPage() {
   const fromApi = await fetchPortfolioFromApi();
+  const clients = await fetchClientsFromApi();
   const stored = await getPortfolioItems();
   const items =
     fromApi.length > 0 ? fromApi : stored.length > 0 ? stored : portfolioItems;
@@ -56,7 +72,7 @@ export default async function PortfolioPage() {
 
         {/* Gallery */}
         <section className="py-14 sm:py-20">
-          <PortfolioGallery items={items} />
+          <PortfolioGallery items={items} clients={clients} />
         </section>
       </main>
       <Footer />

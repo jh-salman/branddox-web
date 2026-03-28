@@ -1,18 +1,14 @@
 import { readFile, writeFile, mkdir } from "fs/promises";
 import path from "path";
 import type { PortfolioItem } from "./portfolio-types";
+import { normalizePortfolioCategory } from "./portfolio-types";
 
 export type { PortfolioItem } from "./portfolio-types";
 export { PORTFOLIO_CATEGORIES } from "./portfolio-types";
 
-/** Map old category names to the 4 allowed ones. */
+/** Map old category names to the 4 allowed ones (uses shared normalizer). */
 export function normalizeCategory(cat: string): string {
-  const map: Record<string, string> = {
-    Graphics: "Art/Banner",
-    Branding: "Logo",
-    Canva: "Brand Kit",
-  };
-  return map[cat] ?? cat;
+  return normalizePortfolioCategory(cat);
 }
 
 const DATA_DIR = path.join(process.cwd(), "data");

@@ -43,12 +43,14 @@ export default function AdminPage() {
     aspectClass: PortfolioItem["aspectClass"];
     width: number;
     height: number;
+    clientId: string;
   }>({
     category: "Thumbnails",
     imageUrl: "",
     aspectClass: "wide",
     width: 1280,
     height: 720,
+    clientId: "",
   });
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "done" | "error">("idle");
@@ -81,6 +83,17 @@ export default function AdminPage() {
   const [youtubeResolvedAdd, setYoutubeResolvedAdd] = useState<YoutubeClientResolved | null>(null);
   const [fetchingYoutubeAdd, setFetchingYoutubeAdd] = useState(false);
   const [fetchingYoutubeEdit, setFetchingYoutubeEdit] = useState(false);
+
+  const [ytChannelUrl, setYtChannelUrl] = useState("");
+  const [ytMaxResults, setYtMaxResults] = useState(50);
+  const [ytClientId, setYtClientId] = useState("");
+  const [ytPreview, setYtPreview] = useState<{
+    channelTitle: string;
+    channelUrl: string;
+    videos: { videoId: string; title: string; thumbnailUrl: string }[];
+  } | null>(null);
+  const [ytBusy, setYtBusy] = useState(false);
+  const [ytMessage, setYtMessage] = useState("");
 
   const checkAuth = useCallback(async () => {
     const res = await fetch("/api/admin/me", { credentials: "include" });
@@ -138,7 +151,7 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (loggedIn && adminTab === "clients") fetchClients();
+    if (loggedIn && (adminTab === "clients" || adminTab === "portfolio")) fetchClients();
   }, [loggedIn, adminTab, fetchClients]);
 
   const handleLogout = async () => {
@@ -230,12 +243,14 @@ export default function AdminPage() {
           aspectClass: form.aspectClass,
           width: form.width,
           height: form.height,
+          ...(form.clientId.trim() ? { clientId: form.clientId.trim() } : {}),
         });
       }
       setForm({
         category: "Thumbnails",
         imageUrl: "",
         ...CATEGORY_PRESETS.Thumbnails,
+        clientId: "",
       });
       setUploadFile(null);
       setUploadedImageUrl(null);
@@ -250,7 +265,15 @@ export default function AdminPage() {
   };
 
   const handleUpdate = async (id: string) => {
-    if (!editForm.title && !editForm.category && !editForm.imageUrl && editForm.aspectClass == null && editForm.width === undefined && editForm.height === undefined) {
+    if (
+      !editForm.title &&
+      !editForm.category &&
+      !editForm.imageUrl &&
+      editForm.aspectClass == null &&
+      editForm.width === undefined &&
+      editForm.height === undefined &&
+      editForm.clientId === undefined
+    ) {
       setEditingId(null);
       return;
     }
@@ -263,6 +286,9 @@ export default function AdminPage() {
     else payload.width = Number(w);
     if (h === "" || h === undefined) delete payload.height;
     else payload.height = Number(h);
+    if (editForm.clientId !== undefined) {
+      payload.clientId = editForm.clientId === "" ? null : editForm.clientId;
+    }
     try {
       await api.updatePortfolioItem(id, payload);
       setEditingId(null);
@@ -286,6 +312,64 @@ export default function AdminPage() {
       setError(err instanceof Error ? err.message : "Delete failed");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleYoutubePreview = async () => {
+    if (!ytChannelUrl.trim()) {
+      setError("Paste a YouTube channel URL first");
+      return;
+    }
+    setYtBusy(true);
+    setYtMessage("");
+    setError("");
+    try {
+      const res = await api.youtubePortfolioThumbnails({
+        channelUrl: ytChannelUrl.trim(),
+        maxResults: ytMaxResults,
+        dryRun: true,
+      });
+      if (res.dryRun === true) {
+        setYtPreview({
+          channelTitle: res.channelTitle,
+          channelUrl: res.channelUrl,
+          videos: res.videos,
+        });
+      }
+    } catch (e) {
+      setYtPreview(null);
+      setError(e instanceof Error ? e.message : "YouTube fetch failed");
+    } finally {
+      setYtBusy(false);
+    }
+  };
+
+  const handleYoutubeImport = async () => {
+    if (!ytChannelUrl.trim()) {
+      setError("Paste a YouTube channel URL first");
+      return;
+    }
+    setYtBusy(true);
+    setYtMessage("");
+    setError("");
+    try {
+      const res = await api.youtubePortfolioThumbnails({
+        channelUrl: ytChannelUrl.trim(),
+        maxResults: ytMaxResults,
+        clientId: ytClientId.trim() || null,
+        dryRun: false,
+      });
+      if (res.dryRun === false) {
+        setYtMessage(
+          `Imported ${res.imported} thumbnail(s). Skipped ${res.skipped} (already in portfolio).`
+        );
+        setYtPreview(null);
+        await fetchItems();
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Import failed");
+    } finally {
+      setYtBusy(false);
     }
   };
 
@@ -478,6 +562,7 @@ export default function AdminPage() {
         ...(logoUrl !== undefined ? { logoUrl } : {}),
         subscriberCount: editClientForm.subscriberCount?.trim(),
         description: editClientForm.description?.trim(),
+        ...(editClientForm.slug !== undefined ? { slug: editClientForm.slug.trim() } : {}),
       });
       setEditingClientId(null);
       setEditClientLogoUploadFile(null);
@@ -609,6 +694,124 @@ export default function AdminPage() {
 
         {adminTab === "portfolio" && (
           <>
+        <section className="mb-10 rounded-xl border border-[var(--brand-dark)]/10 bg-white p-6">
+          <h2 className="mb-2 text-lg font-semibold text-[var(--brand-dark)]">
+            Import video thumbnails from YouTube
+          </h2>
+          <p className="mb-4 rounded-lg bg-[var(--brand-mint)]/10 px-3 py-2 text-xs text-[var(--brand-dark)]/90">
+            Select a channel from <strong>Top Clients</strong> (dropdown) to fill the URL and link imports to that
+            client, or paste any channel URL. Preview loads thumbnails from uploads (YouTube Data API). Import adds
+            them as <strong>Thumbnails</strong> (16:9). Logo and channel art are added when you create the client;
+            this step only imports video thumbnails. YouTube Shorts / Reels-style videos are skipped
+            automatically. Already-imported videos are skipped too.
+          </p>
+          {ytMessage && (
+            <div className="mb-4 rounded-lg bg-[var(--brand-green)]/15 px-3 py-2 text-sm text-[var(--brand-dark)]">
+              {ytMessage}
+            </div>
+          )}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-sm font-medium text-[var(--brand-dark)]">
+                Client (optional)
+              </label>
+              <select
+                value={ytClientId}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  setYtClientId(id);
+                  const cl = clients.find((x) => x.id === id);
+                  if (cl) setYtChannelUrl(cl.channelUrl);
+                }}
+                className="w-full rounded-lg border border-[var(--brand-dark)]/20 px-3 py-2"
+              >
+                <option value="">— None — paste URL below</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.channelName}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-[var(--brand-dark)]/60">
+                Fills channel URL and assigns imports to this channel for the public portfolio.
+              </p>
+            </div>
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-sm font-medium text-[var(--brand-dark)]">
+                Channel URL
+              </label>
+              <input
+                type="url"
+                value={ytChannelUrl}
+                onChange={(e) => setYtChannelUrl(e.target.value)}
+                placeholder="https://www.youtube.com/@handle or /channel/UC..."
+                className="w-full rounded-lg border border-[var(--brand-dark)]/20 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[var(--brand-dark)]">
+                Max videos
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={200}
+                value={ytMaxResults}
+                onChange={(e) => setYtMaxResults(Math.min(200, Math.max(1, Number(e.target.value) || 50)))}
+                className="w-full rounded-lg border border-[var(--brand-dark)]/20 px-3 py-2"
+              />
+            </div>
+            <div className="flex flex-wrap items-end gap-2">
+              <button
+                type="button"
+                onClick={() => void handleYoutubePreview()}
+                disabled={ytBusy}
+                className="rounded-lg border border-[var(--brand-dark)]/20 bg-[var(--brand-dark)]/[0.04] px-4 py-2 text-sm font-semibold text-[var(--brand-dark)] hover:bg-[var(--brand-dark)]/[0.08] disabled:opacity-50"
+              >
+                {ytBusy ? "…" : "Preview"}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleYoutubeImport()}
+                disabled={ytBusy}
+                className="rounded-lg bg-[var(--brand-mint)] px-4 py-2 text-sm font-semibold text-[var(--brand-dark)] hover:bg-[var(--brand-green)] disabled:opacity-50"
+              >
+                {ytBusy ? "Working…" : "Import to portfolio"}
+              </button>
+            </div>
+          </div>
+          {ytPreview && ytPreview.videos.length > 0 && (
+            <div className="mt-6">
+              <p className="mb-2 text-sm font-medium text-[var(--brand-dark)]">
+                Preview: {ytPreview.channelTitle}{" "}
+                <span className="font-normal text-[var(--brand-dark)]/60">
+                  ({ytPreview.videos.length} videos)
+                </span>
+              </p>
+              <div className="max-h-72 overflow-y-auto rounded-xl border border-[var(--brand-dark)]/10 bg-[var(--brand-dark)]/5 p-3">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-6">
+                  {ytPreview.videos.map((v) => (
+                    <div key={v.videoId} className="overflow-hidden rounded-lg bg-white shadow-sm">
+                      <div className="relative aspect-video w-full">
+                        <Image
+                          src={v.thumbnailUrl}
+                          alt=""
+                          fill
+                          sizes="120px"
+                          className="object-cover"
+                        />
+                      </div>
+                      <p className="line-clamp-2 p-1.5 text-[10px] leading-tight text-[var(--brand-dark)]/80">
+                        {v.title}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+
         {/* Add form */}
         <section className="mb-10 rounded-xl border border-[var(--brand-dark)]/10 bg-white p-6">
           <h2 className="mb-4 text-lg font-semibold text-[var(--brand-dark)]">
@@ -637,6 +840,26 @@ export default function AdminPage() {
                 Size: {form.width} × {form.height} px
                 {form.aspectClass === "wide" && " (16:9)"}
                 {form.aspectClass === "square" && " (1:1)"}
+              </p>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[var(--brand-dark)]">
+                Channel (optional)
+              </label>
+              <select
+                value={form.clientId}
+                onChange={(e) => setForm((f) => ({ ...f, clientId: e.target.value }))}
+                className="w-full max-w-md rounded-lg border border-[var(--brand-dark)]/20 px-3 py-2"
+              >
+                <option value="">— None —</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.channelName}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-[var(--brand-dark)]/60">
+                Assign to a client so it appears under Channels on the public portfolio.
               </p>
             </div>
             <div>
@@ -831,6 +1054,23 @@ export default function AdminPage() {
                           placeholder="Height"
                         />
                       </div>
+                      <div>
+                        <label className="mb-0.5 block text-xs text-[var(--brand-dark)]/70">Channel</label>
+                        <select
+                          value={(editForm.clientId ?? item.clientId) ?? ""}
+                          onChange={(e) =>
+                            setEditForm((f) => ({ ...f, clientId: e.target.value }))
+                          }
+                          className="w-full rounded border px-2 py-1 text-sm"
+                        >
+                          <option value="">— None —</option>
+                          {clients.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.channelName}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                       <div className="flex gap-2">
                         <button
                           type="button"
@@ -852,6 +1092,15 @@ export default function AdminPage() {
                   ) : (
                     <>
                       <p className="font-medium text-[var(--brand-dark)]">{item.category}</p>
+                      {item.youtubeVideoId && (
+                        <p className="text-xs text-[var(--brand-dark)]/50">YouTube video: {item.youtubeVideoId}</p>
+                      )}
+                      {item.clientId && (
+                        <p className="text-xs font-medium text-[var(--brand-green)]">
+                          Channel:{" "}
+                          {clients.find((x) => x.id === item.clientId)?.channelName ?? item.clientId}
+                        </p>
+                      )}
                       <p className="text-sm text-[var(--brand-dark)]/70">
                         {item.width != null && item.height != null
                           ? `${item.width} × ${item.height} px`
@@ -866,6 +1115,7 @@ export default function AdminPage() {
                               ...item,
                               width: item.width ?? "",
                               height: item.height ?? "",
+                              clientId: item.clientId ?? "",
                             } as Partial<PortfolioItem> & { width?: number | ""; height?: number | "" });
                           }}
                           className="text-sm text-[var(--brand-mint)] hover:underline"
@@ -1033,6 +1283,11 @@ export default function AdminPage() {
           <h2 className="mb-4 text-lg font-semibold text-[var(--brand-dark)]">
             Add YouTube client (channel we worked with)
           </h2>
+          <p className="mb-4 rounded-lg bg-[var(--brand-mint)]/10 px-3 py-2 text-xs text-[var(--brand-dark)]/90">
+            Saving a client also adds their <strong>logo</strong> (Logo) and <strong>channel banner</strong> (Channel art)
+            to Portfolio automatically. Use the Portfolio tab → Import from YouTube → pick this channel to pull video
+            thumbnails.
+          </p>
           <form onSubmit={handleAddClient} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
@@ -1206,6 +1461,13 @@ export default function AdminPage() {
                       className="w-full rounded border px-2 py-1 text-sm"
                       placeholder="Description"
                     />
+                    <input
+                      type="text"
+                      value={editClientForm.slug ?? c.slug ?? ""}
+                      onChange={(e) => setEditClientForm((f) => ({ ...f, slug: e.target.value }))}
+                      className="w-full rounded border px-2 py-1 font-mono text-xs"
+                      placeholder="URL slug (portfolio/channels/...)"
+                    />
                     <div className="flex gap-2">
                       <button
                         type="button"
@@ -1242,12 +1504,21 @@ export default function AdminPage() {
                         />
                       </div>
                       <p className="mt-2 font-bold text-[var(--brand-dark)]">{c.channelName}</p>
+                      <p className="mt-0.5 font-mono text-xs text-[var(--brand-dark)]/50">/{c.slug}</p>
                       {c.subscriberCount && <p className="text-sm text-[var(--brand-dark)]/70">{c.subscriberCount} subs</p>}
                       {c.description && (
                         <p className="mt-1 line-clamp-4 text-sm text-[var(--brand-dark)]/60">{c.description}</p>
                       )}
                     </a>
-                    <div className="mt-2 flex gap-2">
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <Link
+                        href={`/portfolio/channels/${encodeURIComponent(c.slug)}`}
+                        className="text-sm font-medium text-[var(--brand-mint)] hover:underline"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        View channel portfolio
+                      </Link>
                       <button
                         type="button"
                         onClick={() => {
